@@ -1,4 +1,6 @@
 using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
 using MetadataAnalyzer.Infrastructure.Configuration;
 using MetadataAnalyzer.Infrastructure.Logging;
 using MetadataAnalyzer.WPF.ViewModels;
@@ -62,8 +64,9 @@ public partial class App
         {
             _aboutWindow = ReuseOrCreate(_aboutWindow, () =>
             {
-                var settings = _services.GetRequiredService<AppSettings>();
-                var viewModel = new AboutViewModel(SettingsService.ResolveLogPath(settings.LogFilePath));
+                var viewModel = new AboutViewModel(
+                    _services.GetRequiredService<Core.Interfaces.IAppLogger>(),
+                    _services.GetRequiredService<AppSettings>());
 
                 return new AboutWindow(viewModel) { Owner = MainWindow };
             });
@@ -108,9 +111,9 @@ public partial class App
     /// </summary>
     private void ReportWindowFailure(string windowName, Exception exception)
     {
-        _settingsWindow = ResetIfBroken(_settingsWindow);
-        _aboutWindow = ResetIfBroken(_aboutWindow);
-        _logViewerWindow = ResetIfBroken(_logViewerWindow);
+        _settingsWindow = null;
+        _aboutWindow = null;
+        _logViewerWindow = null;
 
         var message = $"Nie udało się otworzyć okna {windowName}.{Environment.NewLine}{exception.Message}";
 
@@ -137,10 +140,52 @@ public partial class App
             MessageBoxImage.Error);
     }
 
-    private static Window? ResetIfBroken(Window? window) => window;
+    private Window ReuseOrCreate(Window? existing, Func<Window> factory)
+    {
+        if (existing is null)
+        {
+            return Watch(factory());
+        }
 
-    private static Window ReuseOrCreate(Window? existing, Func<Window> factory) =>
-        existing is not null ? existing : factory();
+        // Zamknięte okno WPF nie nadaje się do ponownego pokazania
+        // (InvalidOperationException przy Show). Takie okno jest
+        // porzucane — tworzone jest nowe.
+        if (IsWindowClosed(existing))
+        {
+            existing.Closed -= OnChildWindowClosed;
+            return Watch(factory());
+        }
+
+        return existing;
+    }
+
+    private Window Watch(Window window)
+    {
+        window.Closed += OnChildWindowClosed;
+        return window;
+    }
+
+    private static bool IsWindowClosed(Window window)
+    {
+        // Jedyny wiarygodny sposób: próba dotknięcia uchwytu okna.
+        // Zamknięte okno zgłasza tu InvalidOperationException.
+        try
+        {
+            _ = new WindowInteropHelper(window).Handle;
+            return false;
+        }
+        catch (InvalidOperationException)
+        {
+            return true;
+        }
+    }
+
+    private void OnChildWindowClosed(object? sender, EventArgs e)
+    {
+        if (ReferenceEquals(sender, _settingsWindow)) _settingsWindow = null;
+        if (ReferenceEquals(sender, _aboutWindow)) _aboutWindow = null;
+        if (ReferenceEquals(sender, _logViewerWindow)) _logViewerWindow = null;
+    }
 
     private void CloseChildWindows()
     {

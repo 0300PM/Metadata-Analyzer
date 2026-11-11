@@ -60,7 +60,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public event EventHandler? LogViewerRequested;
 
-    public string Title => $"{AppName} {_settings.LogLevel[..0]}{ApplicationOptions.DefaultVersion}";
+    public string Title { get; } = $"{AppName} {ApplicationOptions.DefaultVersion}";
 
     public string Stage => $"Stage 1 · v{ApplicationOptions.DefaultVersion}, log level {_settings.LogLevel}";
 
