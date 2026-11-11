@@ -89,13 +89,5 @@ Wymiana dostawcy danych (etap 2: `System.Reflection`) to jedna rejestracja + jed
 [2026-11-10 20:27:49] INFO  Application closed
 ```
 
-Plik powstaje obok pliku wykonywalnego (`bin/.../Logs/application.log`); ścieżka względna jest
-rozwiązywana od katalogu aplikacji, katalog tworzony automatycznie.
 
-## Konwencje
 
-- brak komentarzy w kodzie — kod czyta się z nazw (`AppendChildren`, `TryDescribeMember`, `LogEvents`),
-- `CultureInfo.InvariantCulture` w całym formatowaniu (analizatory CA1305 traktowane jako błędy),
-- modele jako niemutowalne `record` z kolekcjami `IReadOnlyList<T>`; w WPF `ObservableCollection` tylko tam, gdzie drzewo jest obserwowane,
-- `CancellationToken` w każdej operacji asynchronicznej,
-- jedna odpowiedzialność na klasę, brak logiki w code-behind (poza jednym zdarzeniem `SelectedItemChanged`).
