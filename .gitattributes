@@ -1,2 +1,17 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Normalizacja końców linii
+* text=auto eol=lf
+
+# Windows: skrypty i pliki wykonywalne
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Pliki binarne
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.dll binary
+*.exe binary
+
+# Linguist: wygenerowane i zależności nie są językiem projektu
+MetadataAnalyzer.Docs/package-lock.json -linguist-detectable
