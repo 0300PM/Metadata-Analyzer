@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="MetadataAnalyzer.CLI/MetadataAnalyzer.CLI.csproj" />
+  <Project Path="MetadataAnalyzer.Core/MetadataAnalyzer.Core.csproj" />
+  <Project Path="MetadataAnalyzer.Infrastructure/MetadataAnalyzer.Infrastructure.csproj" />
+  <Project Path="MetadataAnalyzer.Tests/MetadataAnalyzer.Tests.csproj" />
+  <Project Path="MetadataAnalyzer.WPF/MetadataAnalyzer.WPF.csproj" />
+</Solution>
