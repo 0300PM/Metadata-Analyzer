@@ -1,7 +1,7 @@
 # Metadata Analyzer — dokumentacja techniczna Etapu 1
 
-**Wersja dokumentu:** 1.0 · **Wersja aplikacji:** 1.0.0 · **Platforma:** .NET 10 (LTS), WPF, Windows
-**Stan:** etap 1 zakończony — build 0 błędów / 0 ostrzeżeń, 54 testy jednostkowe zielone
+**Wersja dokumentu:** 1.1 · **Wersja aplikacji:** 1.0.0 · **Platforma:** .NET 10 (LTS), WPF, Windows
+**Stan:** etap 1 zakończony — build 0 błędów / 0 ostrzeżeń, 60 testów jednostkowych zielonych
 
 > **Wersja PDF:** `docs/MetadataAnalyzer-Etap1-Dokumentacja.pdf`.
 > Ten plik jest wersją jednoplikową (Markdown) dokumentacji technicznej — jedynym źródłem treści poza wersją PDF.
@@ -50,7 +50,7 @@ Zakres dostarczony:
 - logger plikowy z poziomami INFO/WARNING/ERROR,
 - okno WPF w MVVM (drzewo, panel szczegółów, pasek statusu),
 - aplikacja konsolowa z menu i obsługą błędnych danych wejściowych,
-- 54 testy jednostkowe (xUnit + Moq),
+- 60 testów jednostkowych (xUnit + Moq),
 - konfiguracja `appsettings.json` i kompozycja DI.
 
 ---
@@ -61,12 +61,12 @@ Zakres dostarczony:
 |---|---|---|---|
 | 1 | Uruchomienie GUI WPF | ✅ | `dotnet run --project MetadataAnalyzer.WPF`; zrzut `docs/wpf-preview.png` |
 | 2 | Niezależne uruchomienie CLI | ✅ | `dotnet run --project MetadataAnalyzer.CLI`; zapis `docs/cli-smoke.txt` |
-| 3 | Wygenerowanie danych symulowanych | ✅ | `MockMetadataProvider` (3 przestrzenie nazw, 4 klasy, 14 składników) |
+| 3 | Wygenerowanie danych symulowanych | ✅ | `MockMetadataProvider` → `SampleLibrary.dll` (3 przestrzenie nazw, 7 typów, 28 składników) |
 | 4 | Hierarchiczne drzewo w WPF | ✅ | `TreeNodeViewModel` + `TreeView` z szablonem hierarchicznym |
-| 5 | Ta sama struktura w konsoli | ✅ | `MetadataFormatter.FormatTree` — wcięcia `|   +--` |
+| 5 | Ta sama struktura w konsoli | ✅ | `MetadataFormatter.FormatTree` — wcięcia `+--` / `\|   +--` |
 | 6 | Szczegóły wybranego elementu | ✅ | `DetailsViewModel` + `DetailsView`; brak przeładowania okna |
 | 7 | Rejestrowanie przebiegu w pliku | ✅ | `FileLogger` → `Logs/application.log` |
-| 8 | Testy jednostkowe | ✅ | 54 testy, 0 niepowodzeń |
+| 8 | Testy jednostkowe | ✅ | 60 testów, 0 niepowodzeń |
 
 **Kryterium zaliczenia (WPF):** wybranie klasy w drzewie powoduje aktualizację panelu szczegółów
 bez przeładowania okna — spełnione: `TreeView.SelectedItemChanged` → `MainViewModel.SelectedNode` →
@@ -97,28 +97,34 @@ MetadataAnalyzer/
 │                        ServiceCollectionExtensions
 │
 ├── MetadataAnalyzer.Infrastructure/
-│   ├── Configuration/   ApplicationOptions
-│   ├── Logging/         FileLogger, LoggingOptions, ServiceCollectionExtensions
-│   └── AppConfiguration.cs
+│   ├── Configuration/   AppSettings, ApplicationOptions, SettingsService
+│   ├── Logging/         FileLogger, LoggingOptions, InMemoryLogSink,
+│   │                    ServiceCollectionExtensions (+ SettingsAwareLogger)
+│   └── AppConfiguration.cs (AddMetadataAnalyzer)
 │
 ├── MetadataAnalyzer.WPF/
-│   ├── Views/           MainWindow, DetailsView
+│   ├── Views/           MainWindow, SettingsWindow, AboutWindow, LogViewerWindow
 │   ├── ViewModels/      MainViewModel, AssemblyViewModel, TreeNodeViewModel,
-│   │                    DetailsViewModel, TreeNodeKind
+│   │                    DetailsViewModel, TreeNodeKind, SettingsViewModel,
+│   │                    AboutViewModel, LogViewerViewModel
 │   ├── Converters/      BoolToVisibilityConverter, CountToVisibilityConverter,
-│   │                    NullToVisibilityConverter
-│   ├── Themes/          Colors.xaml, Controls.xaml
-│   ├── App.xaml / App.xaml.cs
+│   │                    NullToVisibilityConverter, LogLevelToBrushConverter,
+│   │                    NodeTypeToIconConverter
+│   ├── Resources/Styles/ Colors.xaml, Controls.xaml, TreeView.xaml
+│   ├── App.xaml / App.xaml.cs / App.Shell.cs
 │   ├── appsettings.json, app.manifest
 │
 ├── MetadataAnalyzer.CLI/
-│   ├── Program.cs, MetadataConsoleApp.cs, ConsolePresentation.cs, appsettings.json
+│   ├── Program.cs, MetadataConsoleApp.cs (menu 1–4/0), ConsolePresentation.cs,
+│   │            appsettings.json
 │
 └── MetadataAnalyzer.Tests/
     ├── Models/ModelTests.cs
-    ├── Services/  MockMetadataProviderTests, MetadataServiceTests, MetadataFormatterTests
+    ├── Services/  MockMetadataProviderTests, MetadataServiceTests,
+    │              MetadataFormatterTests
     ├── Logging/   FileLoggerTests.cs
     ├── ViewModels/ MainViewModelTests, TreeNodeViewModelTests
+    ├── DependencyInjectionTests.cs
     └── Support/   Fakes.cs (FakeClock, RecordingLogger, TemporaryDirectory)
 ```
 
@@ -405,35 +411,55 @@ public const string InvalidSelection     = "Invalid selection";
 ```
 SampleLibrary.dll
 │
+├── SampleLibrary.Core
+│   ├── UserService
+│   │   ├── Field _repository : IUserRepository (private, readonly)
+│   │   ├── Field _cache : Dictionary<int, User> (private, static)
+│   │   ├── Property Count : int
+│   │   ├── Constructor public (IUserRepository repository)
+│   │   ├── Method GetUser(int id) : User
+│   │   ├── Method CreateUser(string name, [optional] string email) : User
+│   │   └── Method DeleteUser(int id) : bool
+│   └── ProductService
+│       ├── Method GetProduct(int id) : Product
+│       ├── Method static CalculateTotal(int quantity) : decimal
+│       └── Constructor public ()
+│
 ├── SampleLibrary.Models
 │   ├── User
 │   │   ├── Property Id : int
 │   │   ├── Property Name : string
+│   │   ├── Property Email : string
+│   │   ├── Field _createdAt : DateTime (private, readonly)
 │   │   ├── Constructor public ()
 │   │   └── Method GetFullName() : string
 │   └── Product
 │       ├── Property Id : int
+│       ├── Property Name : string
 │       ├── Property Price : decimal
 │       ├── Constructor public ()
 │       └── Method CalculateTax() : decimal
 │
-├── SampleLibrary.Services
-│   └── UserService
-│       ├── Field _userRepository : IUserRepository (private, readonly)
-│       ├── Constructor public (IUserRepository userRepository)
-│       ├── Method GetUser(int id) : User
-│       └── Method DeleteUser(int id) : bool
-│
-└── SampleLibrary.Helpers
-    └── Logger
-        ├── Constructor private ()
-        └── Method static Write(string message) : void
+└── SampleLibrary.Interface
+    ├── IUserService (interface)
+    │   ├── Method GetUser(int id) : User
+    │   └── Method CreateUser(string name) : User
+    ├── Logger (static, struct)
+    │   ├── Field _level : LogLevel (private)
+    │   └── Method static Write(string message) : void
+    └── UserRole (enum)
+        ├── Guest = 0
+        ├── Member = 1
+        └── Administrator = 2
 ```
 
-Statystyki modelu: **3 przestrzenie nazw, 4 klasy, 14 składników**.
-Dane pokrywają wszystkie rodzaje składników (pole, właściwość, konstruktor, metoda, parametr),
-wszystkie poziomy widoczności (public, private) oraz przypadek metody statycznej — dzięki temu
-każda ścieżka prezentacji jest widoczna w demo i testach.
+Statystyki modelu: **3 przestrzenie nazw, 7 typów, 28 składników**.
+Dane pokrywają wszystkie rodzaje składników (pole, właściwość, konstruktor, metodę, parametr,
+członka wyliczenia), wszystkie poziomy widoczności (public, private), metodę statyczną,
+parametr opcjonalny, interfejs, strukturę statyczną i wyliczenie — dzięki temu
+każda ścieżka prezentacji jest widoczna w demo i testach. Klasy budują metody fabryczne
+`UserService()`, `ProductService()`, `User()`, `Product()`, `IUserService()`, `Logger()`, `UserRole()`;
+czas `LoadedAt` pochodzi z wstrzykniętego `ISystemClock` (testy: `FakeClock`).
 
 ---
 
@@ -457,11 +483,14 @@ kultura niezmienna. Poziomy: `INFO`, `WARN`, `ERROR`.
 | Wymaganie | Realizacja |
 |---|---|
 | Poziomy INFO / WARNING / ERROR | `LogInformationAsync`, `LogWarningAsync`, `LogErrorAsync` |
-| Data i godzina w wpisie | `DateTimeOffset.Now` + format niezmienny |
+| Poziom minimalny | `LoggingOptions.MinimumLevel` (`Debug`/`Information`/`Warning`/`Error`, normalizacja w `SettingsService.NormalizeLevel`); wpis poniżej progu jest pomijany |
+| Data i godzina w wpisie | `DateTimeOffset.Now` + format niezmienny (`yyyy-MM-dd HH:mm:ss`) |
 | Dopisywanie, nie nadpisywanie | `FileStream(FileMode.Append, FileAccess.Write, FileShare.ReadWrite)` |
+| Serializacja wpisów | `SemaphoreSlim` — brak przeplatania przy równoległych zapisach |
 | Obsługa błędów zapisu | `catch` na `IOException`, `UnauthorizedAccessException`, `NotSupportedException` → komunikat `[logging failure]`, **bez wyjątku na zewnątrz** |
-| Wstrzykiwanie przez DI | rejestracja `IAppLogger → FileLogger` w `AddMetadataAnalyzerLogging` |
+| Wstrzykiwanie przez DI | `AddMetadataAnalyzerLogging`: `LoggingOptions` + `FileLogger` + `IAppLogger → FileLogger`; z `useInMemoryLog: true` (WPF) dodatkowo `InMemoryLogSink` i `IAppLogger → SettingsAwareLogger` (poziom z `LoggingOptions` + zapis do pliku i do widoku) |
 | Katalog pliku | tworzony automatycznie (`Directory.CreateDirectory`) |
+| Konsola | `LoggingOptions.LogToConsole` (`true` w CLI, `false` w WPF) — wpis idzie też na konsolę |
 | Ścieżka | względna rozwiązywana od `AppContext.BaseDirectory` (`AppConfiguration.ResolveLogFilePath`) |
 | Bezpieczeństwo wątków | `SemaphoreSlim(1,1)` — wpisy nie przeplatają się; kolejność wywołań zachowana |
 | Możliwość wyłączenia | `Logging:Enabled = false` |
@@ -539,6 +568,10 @@ services.AddSingleton<IMetadataProvider, ReflectionMetadataProvider>();
 ```
 
 Reszta kodu pozostaje bez zmian — serwis, formatter, ViewModele i CLI zależą wyłącznie od interfejsu.
+WPF wywołuje `AddMetadataAnalyzer(configuration, logToConsole: false, useInMemoryLog: true)`
+(Log Viewer czyta `InMemoryLogSink`), CLI — `AddMetadataAnalyzer(configuration, logToConsole: true)`
+(bez sinka, log też na konsolę). Zmiana poziomu w oknie Settings zapisuje `appsettings.json`
+i podnosi `LoggingOptions.MinimumLevel`, więc `SettingsAwareLogger` od razu filtruje nowe wpisy.
 
 ---
 
@@ -548,29 +581,39 @@ Reszta kodu pozostaje bez zmian — serwis, formatter, ViewModele i CLI zależą
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│ [MA]  Metadata Analyzer                    [ Analyze ]  [ Refresh ]      │  pasek górny
-│       SampleLibrary.dll · v1.0.0.0                                       │
+│ File  View  Tools  Help                                                 │  menu
+│ [Open] [Refresh] [Expand All] [Collapse All] │ [Settings]   SampleLibrary│  pasek narzędzi
 ├──────────────────────────────┬───────────────────────────────────────────┤
-│ STRUCTURE   3 ns · 4 cls …   │ [Assembly]                                │
-│                              │ SampleLibrary                             │  panel szczegółów
-│ ▾ SampleLibrary   Assembly   │ SampleLibrary.dll                         │
+│ ASSEMBLY EXPLORER            │ DETAILS                  No element sele… │
+│                              │ [Assembly]                                │  panel szczegółów
+│ ▾ SampleLibrary   Assembly   │ SampleLibrary                             │
+│   ▸ SampleLibrary.Core       │ SampleLibrary.dll                         │
 │   ▸ SampleLibrary.Models     │ ──────────────────────────────────────    │
-│   ▸ SampleLibrary.Services   │ Version   1.0.0.0                          │
-│   ▸ SampleLibrary.Helpers    │ Namespaces 3    Classes 4   Members 14    │
-│                              │ Namespaces: Models / Services / Helpers   │
+│   ▸ SampleLibrary.Interface  │ Version   1.0.0.0                          │
+│                              │ 3 namespaces · 7 types · 28 members       │
 ├──────────────────────────────┴───────────────────────────────────────────┤
-│ ● Analysis completed in 22 ms      [Namespaces 3][Classes 4][Members 14] │  pasek statusu
+│ ● status (Ready / Data loaded successfully…)  0 namespaces · 0 types …  │  pasek statusu
 └──────────────────────────────────────────────────────────────────────────┘
 ```
+
+Menu: File (Open Assembly `Ctrl+O`, Close Assembly, Exit), View (Expand All, Collapse All,
+Show/Hide Details Panel, Log Viewer), Tools (Settings, Clear Logs), Help (About,
+Application Information). Okna Settings / About / Log Viewer otwierane są w jednym
+wystąpieniu (`App.Shell.cs`): zamknięte okno jest porzucane i tworzone od nowa, a błąd
+otwarcia kończy się wpisem `ERROR … window failed`, paskiem ostrzeżenia w oknie głównym
+(`ReportError`) i oknem `MessageBox` — aplikacja pozostaje sprawna.
 
 ### 10.2. ViewModele
 
 | ViewModel | Odpowiedzialność | Kluczowe składowe |
 |---|---|---|
-| `MainViewModel` | stan okna, polecenia, status | `Assembly`, `SelectedNode`, `Details`, `StatusMessage`, `IsBusy`, `AnalyzeCommand`, `RefreshCommand`, `ClearSelectionCommand` |
-| `AssemblyViewModel` | dane analizowanego komponentu | `Name`, `Version`, `FileName`, `LoadedAt`, `Nodes`, `NamespaceCount`, `ClassCount`, `MemberCount`, `Summary`, `Counters` |
-| `TreeNodeViewModel` | jeden węzeł drzewa | `Label`, `Caption`, `Kind`, `Model`, `Children`, `HasChildren`, `IsExpanded`, `IsSelected`, `Owner`, `ToDetails()` |
-| `DetailsViewModel` | szczegóły wybranego elementu | `Title`, `Subtitle`, `Kind`, `Properties`, `Sections`, `HasSelection` + fabryki `FromAssembly`, `FromNamespace`, `FromClass`, `FromMethod`, `FromProperty`, `FromField`, `FromConstructor`, `FromParameter` |
+| `MainViewModel` | stan okna, polecenia, status | `Assembly`, `SelectedNode`, `Details`, `StatusMessage`, `IsBusy`, `IsDetailsVisible`, `ErrorMessage`, `LogEntries`, `OpenAssemblyCommand`, `RefreshCommand`, `ClearLogsCommand`, `ToggleDetailsCommand`, `ShowSettings/ShowAbout/ShowLogViewerCommand`, `ReportError` |
+| `AssemblyViewModel` | dane analizowanego komponentu | `Name`, `Version`, `FileName`, `LoadedAt`, `Nodes`, `NamespaceCount`, `ClassCount`, `MemberCount`, `Summary`, `Counters`, `SetExpanded` |
+| `TreeNodeViewModel` | jeden węzeł drzewa | `Label`, `Caption`, `Kind` (`TreeNodeKind`), `Children`, `HasChildren`, `IsExpanded`, `IsSelected`, `ToDetails()` |
+| `DetailsViewModel` | szczegóły wybranego elementu | `Title`, `Subtitle`, `Kind`, `Items` (nazwa–wartość), `HasItems`/`HasSelection` + fabryki `FromAssembly`, `FromNamespace`, `FromClass`, `FromMethod`, `FromProperty`, `FromField`, `FromConstructor`, `FromParameter`, `Empty` |
+| `SettingsViewModel` | ustawienia aplikacji | `LogFilePath`, `LogLevel`, `LogLevels`, `UseMockData`, `ShowDetailsPanel`, `LogFileDescription`, `SaveCommand`, `CancelCommand` |
+| `AboutViewModel` | dane okna About | `ApplicationName`, `Version`, `Author`, `RuntimeVersion`, `OsVersion`, `WpfVersion`, `BuildVersion`, `Stage`, `LogFilePath`, `LogFileState`, `CopyVersionCommand`, `OpenLogFolderAsyncCommand` |
+| `LogViewerViewModel` | podgląd logu | `Entries` (`InMemoryLogSink`), `LevelFilter`, `SearchText`, `FilteredEntries`, `RefreshCommand`, `ClearCommand` |
 
 `DetailsViewModel` jest niemutowalny — zmiana wyboru podmienia cały obiekt (`Details = value.ToDetails()`),
 co upraszcza powiadomienia (`[ObservableProperty]` na `MainViewModel`) i eliminuje ręczne
@@ -582,19 +625,46 @@ synchronizowanie dziesiątek właściwości.
 
 ```csharp
 [RelayCommand]
-private async Task AnalyzeAsync(CancellationToken cancellationToken) { … }
+private async Task OpenAssemblyAsync(CancellationToken cancellationToken) { … }
 
 [RelayCommand]
 private async Task RefreshAsync(CancellationToken cancellationToken) { … }
 
 [RelayCommand]
+private async Task CloseAssemblyAsync() { … }
+
+[RelayCommand]
+private void ExpandAll() { … }
+
+[RelayCommand]
+private void CollapseAll() { … }
+
+[RelayCommand]
+private void ToggleDetails() { … }
+
+[RelayCommand]
+private void ShowSettings() { … }   // SettingsRequested → App.Shell
+
+[RelayCommand]
+private void ShowAbout() { … }      // AboutRequested → App.Shell
+
+[RelayCommand]
+private void ShowLogViewer() { … }  // LogViewerRequested → App.Shell
+
+[RelayCommand]
+private async Task ClearLogsAsync() { … }
+
+[RelayCommand]
 private void ClearSelection() { … }
 ```
 
-Generatory tworzą `AnalyzeCommand`, `RefreshCommand`, `ClearSelectionCommand` (typ `AsyncRelayCommand`
-dla metod asynchronicznych — z blokadą ponownego wykonania w trakcie pracy i przekazywaniem
-`CancellationToken`). Dzięki temu w projekcie nie ma ręcznie pisanych `RelayCommand`/`AsyncRelayCommand`
-ani powtarzalnego `INotifyPropertyChanged`.
+Generatory tworzą `OpenAssemblyCommand`, `RefreshCommand`, `CloseAssemblyCommand`,
+`ExpandAllCommand`, `CollapseAllCommand`, `ToggleDetailsCommand`, `ShowSettingsCommand`,
+`ShowAboutCommand`, `ShowLogViewerCommand`, `ClearLogsCommand`, `ClearSelectionCommand`
+(typ `AsyncRelayCommand` dla metod asynchronicznych — z blokadą ponownego wykonania
+w trakcie pracy (`IsBusy`) i przekazywaniem `CancellationToken`). Dzięki temu w projekcie
+nie ma ręcznie pisanych `RelayCommand`/`AsyncRelayCommand` ani powtarzalnego
+`INotifyPropertyChanged`.
 
 ### 10.4. Powiadamianie o zmianach
 
@@ -627,12 +697,14 @@ ani powtarzalnego `INotifyPropertyChanged`.
 
 | Akcja | Efekt |
 |---|---|
-| `Analyze` | ładuje dane mockowe, przebudowuje drzewo, pokazuje szczegóły zestawu, status `Analysis completed in N ms` |
+| `Open` | ładuje dane mockowe (`IMetadataService.AnalyzeAsync`), przebudowuje drzewo, pokazuje szczegóły zestawu, status `Data loaded successfully. Open completed in N ms.` |
 | `Refresh` | to samo przez `IMetadataService.RefreshAsync` (osobna ścieżka logowania) |
-| Klik w węzeł | `Details` aktualizowane natychmiast, drzewo nietknięte |
+| `Close Assembly` | czyści drzewo, wybór i szczegóły, status `Assembly closed.` |
+| Klik w węzeł | `SelectedNode` → `Details = value.ToDetails()`, status `… selected: …`, drzewo nietknięte |
 | Rozwinięcie węzła | `IsExpanded` w ViewModelu (stan zachowany przy przewijaniu) |
-| Błąd analizy | status `Analysis failed: …`, log `ERROR`, okno pozostaje sprawne |
-| Praca w toku | status `… in progress…`, wskaźnik w pasku statusu zmienia kolor; kolejne wywołanie ignorowane (`IsBusy`) |
+| Błąd analizy | `ErrorMessage` + ostrzeżenie w oknie, status `An error occurred. See the log for details.`, log `ERROR`, okno pozostaje sprawne |
+| Praca w toku | status `Loading data...`, kolejne wywołanie ignorowane (`IsBusy`) |
+| `Clear Logs` | czyści widok `InMemoryLogSink` (nie plik), status `Log view cleared.` |
 
 ---
 
@@ -699,7 +771,7 @@ Rozdzielenie prezentacji od logiki sterowania ułatwia testowanie (wejście/wyj�
 ### 12.2. Wynik
 
 ```
-Powodzenie! — niepowodzenie: 0, powodzenie: 54, pominięto: 0, łącznie: 54
+Powodzenie! — niepowodzenie: 0, powodzenie: 60, pominięto: 0, łącznie: 60
 ```
 
 ### 12.3. Zakres pokrycia
@@ -711,8 +783,9 @@ Powodzenie! — niepowodzenie: 0, powodzenie: 54, pominięto: 0, łącznie: 54
 | `MetadataServiceTests` | 7 | model z providera, logi start/sukces, błąd + rethrow + `Current == null`, anulowanie + WARN, przekazanie `CancellationToken`, `RefreshAsync` podmienia model, `Current` puste przed analizą |
 | `MetadataFormatterTests` | 10 | nagłówek, hierarchia i wcięcia, pusty model, `null` → `ArgumentNullException`, liczniki, metoda/właściwość/nieznany składnik, pusty `memberName`, niezależność od kultury (pl-PL vs invariant) |
 | `FileLoggerTests` | 9 | zapis INFO/WARN/ERROR, format z datą, dopisywanie, tworzenie katalogu, wyłączenie, awaria zapisu bez wyjątku, 20 równoległych wpisów, ścieżka absolutna |
-| `MainViewModelTests` | 9 | stan początkowy, wczytanie + drzewo, status z czasem, wybór klasy bez ponownej analizy (kryterium zaliczenia), szczegóły metody, czyszczenie wyboru, błąd + log, `Refresh`, ignorowanie wywołania w trakcie pracy |
+| `MainViewModelTests` | 9 | stan początkowy, wczytanie (`OpenAssembly`) + drzewo, status z czasem, wybór klasy bez ponownej analizy (kryterium zaliczenia), szczegóły metody, czyszczenie wyboru, błąd + log, `Refresh`, ignorowanie wywołania w trakcie pracy |
 | `TreeNodeViewModelTests` | 6 | pełna hierarchia, węzły parametrów, szczegóły klasy/parametru/zestawu, powiadomienia o zmianie `IsExpanded`/`IsSelected` |
+| `DependencyInjectionTests` | 6 | `ValidateOnBuild` bez wyjątków, singletony współdzielone, `SettingsAwareLogger` + sink, resolver zwraca mocka, `UseMockData: false` → `NotSupportedException` |
 
 ### 12.4. Przykład testu kryterium zaliczenia
 
@@ -723,7 +796,7 @@ public async Task SelectingNodeUpdatesDetailsWithoutReloading()
     _service.Setup(s => s.AnalyzeAsync(It.IsAny<CancellationToken>())).ReturnsAsync(assembly);
 
     var viewModel = CreateViewModel();
-    await viewModel.AnalyzeCommand.ExecuteAsync(null);
+    await viewModel.OpenAssemblyCommand.ExecuteAsync(null);
 
     viewModel.SelectedNode = viewModel.Assembly!.Nodes[0].Children[0].Children[0];
 
@@ -761,7 +834,7 @@ dotnet build MetadataAnalyzer.slnx
 dotnet test  MetadataAnalyzer.Tests/MetadataAnalyzer.Tests.csproj
 ```
 
-Oczekiwany wynik: `Kompilacja powiodła się. 0 błędów, 0 ostrzeżeń`, `powodzenie: 54`.
+Oczekiwany wynik: `Liczba błędów: 0, Ostrzeżenia: 0`, `powodzenie: 60, niepowodzenie: 0`.
 
 ### 13.3. Aplikacja WPF
 
@@ -769,11 +842,11 @@ Oczekiwany wynik: `Kompilacja powiodła się. 0 błędów, 0 ostrzeżeń`, `powo
 dotnet run --project MetadataAnalyzer.WPF
 ```
 
-1. Kliknij **Analyze** — drzewo pojawi się po lewej, szczegóły zestawu po prawej.
-2. Rozwiń `SampleLibrary` → `SampleLibrary.Models` → `User`.
+1. Kliknij **Open** — drzewo pojawi się po lewej (korzeń `SampleLibrary`), szczegóły zestawu po prawej.
+2. Rozwiń `SampleLibrary` → `SampleLibrary.Core` → `UserService`.
 3. Kliknij klasę — panel szczegółów pokaże właściwości, metody, pola i konstruktory.
 4. Kliknij metodę lub parametr — panel pokaże podpis, typ zwracany i listę parametrów.
-5. **Refresh** wczytuje dane ponownie (osobny wpis w logu).
+5. **Refresh** wczytuje dane ponownie (osobny wpis w logu). Menu: File (Open/Close/Exit), View (Expand All, Collapse All, Details Panel, Log Viewer), Tools (Settings, Clear Logs), Help (About, Application Information).
 
 ### 13.4. Aplikacja CLI
 
@@ -845,7 +918,7 @@ pustego stanu — kodem w `MainWindow.xaml.cs` reagującym na `HasMetadata`.
 2. Logowanie tylko do pliku; logger bazodanowy zarezerwowany na etap 4 (`Logging:Provider`).
 3. Brak wyszukiwania i filtrowania w drzewie (etap 2+).
 4. Brak eksportu raportu (JSON/CSV) — `IMetadataFormatter` jest na to przygotowany.
-5. Ustawienia są tylko do odczytu z `appsettings.json` (bez edycji w UI).
+5. Okno Settings zapisuje `appsettings.json` (`LogFilePath`, `MinimumLevel`, `UseMockData`, `ShowDetailsPanel`); zmiana poziomu logowania działa w trakcie pracy (`SettingsAwareLogger` + `InMemoryLogSink`).
 6. Brak testów UI (widoków XAML) — testowane są ViewModele i logika; zgodnie z wymaganiem etapu.
 7. `Application:UseMockData = false` rzuca `NotSupportedException` do czasu implementacji refleksji.
 8. Aplikacja WPF działa tylko na Windows (WPF nie jest cross-platform).
