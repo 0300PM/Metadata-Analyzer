@@ -1,0 +1,46 @@
+<Application x:Class="MetadataAnalyzer.WPF.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:MetadataAnalyzer.WPF.Converters"
+             xmlns:viewModels="clr-namespace:MetadataAnalyzer.WPF.ViewModels"
+             xmlns:controls="clr-namespace:MetadataAnalyzer.WPF.Controls">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Buttons.xaml" />
+                <ResourceDictionary Source="Resources/Styles/TextBoxes.xaml" />
+                <ResourceDictionary Source="Resources/Styles/TreeView.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+            <converters:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" Invert="True" />
+            <converters:NodeTypeToIconConverter x:Key="NodeTypeToIcon" />
+            <converters:LogLevelToBrushConverter x:Key="LogLevelToBrush" />
+            <converters:LogEntryToTextConverter x:Key="LogEntryToText" />
+
+            <HierarchicalDataTemplate x:Key="NodeHeaderTemplate"
+                                      DataType="{x:Type viewModels:TreeNodeViewModel}"
+                                      ItemsSource="{Binding Children}">
+                <StackPanel Orientation="Horizontal" ToolTip="{Binding Tooltip}">
+                    <Image Width="16"
+                           Height="16"
+                           Margin="0,0,6,0"
+                           RenderOptions.BitmapScalingMode="HighQuality"
+                           Source="{Binding Kind, Converter={StaticResource NodeTypeToIcon}}" />
+                    <TextBlock Text="{Binding Label}"
+                               VerticalAlignment="Center"
+                               FontFamily="{StaticResource MonoFont}"
+                               FontSize="12"
+                               Foreground="{StaticResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding Caption}"
+                               VerticalAlignment="Center"
+                               Margin="8,0,0,0"
+                               FontSize="11"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </HierarchicalDataTemplate>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

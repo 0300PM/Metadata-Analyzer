@@ -1,0 +1,83 @@
+<Window x:Class="MetadataAnalyzer.WPF.Views.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewModels="clr-namespace:MetadataAnalyzer.WPF.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=viewModels:AboutViewModel}"
+        Title="About"
+        Width="520"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Style="{StaticResource WindowStyle}">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal">
+            <Image Width="40" Height="40" Source="pack://application:,,,/Resources/Icons/assembly.svg" />
+            <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="{Binding ApplicationName}" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Stage}" Style="{StaticResource MutedStyle}" Margin="0,2,0,0" />
+            </StackPanel>
+        </StackPanel>
+
+        <Border Grid.Row="1" Height="1" Background="{StaticResource BorderBrush}" Margin="0,18,0,14" />
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="130" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Version" Style="{StaticResource CaptionStyle}" Margin="0,0,0,8" />
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Version}" Style="{StaticResource MonoStyle}" Margin="0,0,0,8" />
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Author" Style="{StaticResource CaptionStyle}" Margin="0,0,0,8" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Author}" Style="{StaticResource MonoStyle}" Margin="0,0,0,8" />
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text=".NET runtime" Style="{StaticResource CaptionStyle}" Margin="0,0,0,8" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding RuntimeVersion}" Style="{StaticResource MonoStyle}" Margin="0,0,0,8" TextWrapping="Wrap" />
+
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="Windows" Style="{StaticResource CaptionStyle}" Margin="0,0,0,8" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding OsVersion}" Style="{StaticResource MonoStyle}" Margin="0,0,0,8" TextWrapping="Wrap" />
+
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="Log file" Style="{StaticResource CaptionStyle}" />
+            <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding LogFilePath}" Style="{StaticResource MonoStyle}" TextWrapping="Wrap" />
+        </Grid>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <TextBlock Text="{Binding StatusMessage}"
+                       Style="{StaticResource MutedStyle}"
+                       VerticalAlignment="Center"
+                       Margin="0,0,12,0" />
+            <Button Content="Copy version info"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Command="{Binding CopyVersionCommand}"
+                    Margin="0,0,8,0" />
+            <Button Content="Open log folder"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Command="{Binding OpenLogFolderCommand}"
+                    Margin="0,0,8,0" />
+            <Button Content="Close"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Click="OnCloseClick"
+                    IsDefault="True" />
+        </StackPanel>
+    </Grid>
+</Window>

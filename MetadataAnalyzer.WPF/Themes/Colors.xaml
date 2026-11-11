@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Color x:Key="SurfaceColor">#FF10151C</Color>
+    <Color x:Key="SurfaceElevatedColor">#FF151B24</Color>
+    <Color x:Key="SurfaceRaisedColor">#FF1B2330</Color>
+    <Color x:Key="BorderColor">#FF25303F</Color>
+    <Color x:Key="BorderStrongColor">#FF31404F</Color>
+    <Color x:Key="TextPrimaryColor">#FFE6EDF5</Color>
+    <Color x:Key="TextSecondaryColor">#FF9AABBD</Color>
+    <Color x:Key="TextMutedColor">#FF6B7B8C</Color>
+    <Color x:Key="AccentColor">#FF4C8DFF</Color>
+    <Color x:Key="AccentSoftColor">#FF1E2E48</Color>
+    <Color x:Key="SuccessColor">#FF3FB950</Color>
+    <Color x:Key="WarningColor">#FFD29922</Color>
+    <Color x:Key="DangerColor">#FFF85149</Color>
+
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+    <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="{StaticResource SurfaceElevatedColor}" />
+    <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="{StaticResource SurfaceRaisedColor}" />
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}" />
+    <SolidColorBrush x:Key="BorderStrongBrush" Color="{StaticResource BorderStrongColor}" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}" />
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="{StaticResource AccentSoftColor}" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+
+    <LinearGradientBrush x:Key="HeaderBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF16202D" Offset="0" />
+        <GradientStop Color="#FF10151C" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="AccentGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF5C9BFF" Offset="0" />
+        <GradientStop Color="#FF3B7BE8" Offset="1" />
+    </LinearGradientBrush>
+
+</ResourceDictionary>
