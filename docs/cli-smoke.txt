@@ -1,0 +1,120 @@
+========================================
+           METADATA ANALYZER
+========================================
+
+[1] Load simulated metadata
+[2] Display assembly structure
+[3] Display assembly details
+[4] Display member details
+[0] Exit
+
+State: Ready (no metadata loaded) | Namespaces: 0 | Classes: 0 | Last operation: -
+Select option: 
+Metadata loaded: SampleLibrary 1.0.0.0
+File name:     SampleLibrary.dll
+Namespaces:    3
+Classes:       4
+
+[1] Load simulated metadata
+[2] Display assembly structure
+[3] Display assembly details
+[4] Display member details
+[0] Exit
+
+State: Metadata loaded | Namespaces: 3 | Classes: 4 | Last operation: 6 ms
+Select option: 
+Assembly: SampleLibrary
+Version: 1.0.0.0
+
+|   +-- Namespace: SampleLibrary.Models
+    |   +-- Class: User
+        |   +-- Property: Id (int)
+        |   +-- Property: Name (string)
+        |   +-- Constructor: public ()
+        +-- Method: GetFullName() : string
+    +-- Class: Product
+        |   +-- Property: Id (int)
+        |   +-- Property: Price (decimal)
+        |   +-- Constructor: public ()
+        +-- Method: CalculateTax() : decimal
+|   +-- Namespace: SampleLibrary.Services
+    +-- Class: UserService
+        |   +-- Field: _userRepository (IUserRepository)
+        |   +-- Constructor: public (IUserRepository userRepository)
+        |   +-- Method: GetUser(int id) : User
+        +-- Method: DeleteUser(int id) : bool
++-- Namespace: SampleLibrary.Helpers
+    +-- Class: Logger
+        |   +-- Constructor: private ()
+        +-- Method: Write(string message) : void
+
+Analysis completed successfully.
+
+[1] Load simulated metadata
+[2] Display assembly structure
+[3] Display assembly details
+[4] Display member details
+[0] Exit
+
+State: Metadata loaded | Namespaces: 3 | Classes: 4 | Last operation: 6 ms
+Select option: 
+Assembly:     SampleLibrary
+Version:      1.0.0.0
+File name:    SampleLibrary.dll
+Namespaces:   3
+Classes:      4
+Members:      14
+Loaded at:    2026-11-10 20:27:49
+
+Namespaces:
+  SampleLibrary.Models  (2 classes)
+    User  (4 members)
+    Product  (4 members)
+  SampleLibrary.Services  (1 class)
+    UserService  (4 members)
+  SampleLibrary.Helpers  (1 class)
+    Logger  (2 members)
+
+[1] Load simulated metadata
+[2] Display assembly structure
+[3] Display assembly details
+[4] Display member details
+[0] Exit
+
+State: Metadata loaded | Namespaces: 3 | Classes: 4 | Last operation: 6 ms
+Select option: 
+[1]  SampleLibrary.Models.User
+[2]  SampleLibrary.Models.Product
+[3]  SampleLibrary.Services.UserService
+[4]  SampleLibrary.Helpers.Logger
+Select class: 
+[1]  _userRepository
+[2]  UserService(IUserRepository userRepository)
+[3]  GetUser
+[4]  DeleteUser
+Select member: 
+Class:        SampleLibrary.Services.UserService
+Member:       UserService(IUserRepository userRepository) (not found)
+
+[1] Load simulated metadata
+[2] Display assembly structure
+[3] Display assembly details
+[4] Display member details
+[0] Exit
+
+State: Metadata loaded | Namespaces: 3 | Classes: 4 | Last operation: 6 ms
+Select option: 
+Invalid option '7'. Choose one of: 1, 2, 3, 4, 0.
+
+[1] Load simulated metadata
+[2] Display assembly structure
+[3] Display assembly details
+[4] Display member details
+[0] Exit
+
+State: Metadata loaded | Namespaces: 3 | Classes: 4 | Last operation: 6 ms
+Select option: 
+
+========================================
+Goodbye.
+========================================

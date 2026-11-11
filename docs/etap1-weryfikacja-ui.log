@@ -1,0 +1,75 @@
+﻿=== 1. OPEN ===
+widoczne wezly: 4
+status: No element selected || Data loaded successfully. Open completed in 26 ms. || Loaded
+
+=== 2. EXPAND ALL ===
+wezly: 30 | zwinietych: 1
+status: Property selected: Id
+
+=== 3. COLLAPSE ALL ===
+wezly: 1 | rozwinietych: 0
+status: All elements collapsed. || Loaded
+
+=== 4. EXPAND ALL (ponownie) ===
+wezly: 48 | status: All elements expanded. || Loaded
+
+=== 5. ZAZNACZANIE ELEMENTOW (po kolei, od korzenia) ===
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Assembly/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Namespace/Namespace/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor/Class/Class  |  Namespace selected: SampleLibrary.Core
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Namespace/Namespace/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor/Class/Class  |  Namespace selected: SampleLibrary.Models
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Namespace/Namespace/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor/Interface/Struct/Enum  |  Namespace selected: SampleLibrary.Interface
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Class/Assembly/Namespace/Namespace/Namespace/Namespace/Class/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Class selected: UserService
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Class/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Class selected: ProductService
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Class/Assembly/Namespace/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Class selected: User
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Class/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Class selected: Product
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Interface/Assembly/Namespace/Namespace/Namespace/Namespace/Interface/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Interface selected: IUserService
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Struct/Assembly/Namespace/Namespace/Namespace/Struct/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Struct selected: Logger
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Enum/Assembly/Namespace/Namespace/Namespace/Enum/Enum/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor/Enum value/Enum value/Enum value  |  Enum selected: UserRole
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Field/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Field selected: _repository
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Field/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Field selected: _cache
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Property/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Property selected: Count
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Constructor/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Constructor selected: UserService(IUserRepository repository)
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Method/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Method selected: GetUser
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Method/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Method selected: CreateUser
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Method/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Method selected: DeleteUser
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Constructor/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Constructor selected: ProductService()
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Method/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Method selected: GetProduct
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Method/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Method selected: CalculateTotal
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Field/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Field selected: _createdAt
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Property/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Property selected: Id
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Property/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Property selected: Name
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Property/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Property selected: Email
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Constructor/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Constructor selected: User()
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Method/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Method selected: GetFullName
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Property/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Property selected: Id
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Property/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Property selected: Name
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Property/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Property selected: Price
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Constructor/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Constructor selected: Product()
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Method/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Method selected: CalculateTax
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Method/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Method selected: GetUser
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Method/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Method selected: CreateUser
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Field/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Field selected: _level
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Method/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Method selected: Write
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Enum Value/Assembly/Namespace/Namespace/Namespace/Enum/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Enum Value selected: Guest
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Enum Value/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Enum Value selected: Member
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Enum Value/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Enum Value selected: Administrator
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Parameter/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Parameter selected: id
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Parameter/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Parameter selected: name
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Parameter/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Parameter selected: email
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Parameter/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Parameter selected: id
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Parameter/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Parameter selected: id
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Parameter/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Parameter selected: quantity
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Parameter/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Parameter selected: id
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Parameter/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Parameter selected: name
+  MetadataAnalyzer.WPF.ViewModels.TreeNodeViewModel  =>  kind=Parameter/Assembly/Namespace/Namespace/Namespace/Class/Class/Class/Class/Interface/Struct/Enum/Constructor/Constructor/Constructor/Constructor  |  Parameter selected: message
+
+=== 6. REFRESH ===
+status: No element selected || Data loaded successfully. Refresh completed in 36 ms. || Loaded | wezly: 4
+
+=== 7. SETTINGS ===
+okien procesu: 1
+  okno: 'Metadata Analyzer 1.0.0'
+  BRAK OKNA SETTINGS
+
+=== 8. ABOUT ===
+  okno: 'Metadata Analyzer 1.0.0'

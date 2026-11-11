@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="en">
+<!--
+  Edit this file and reprint it (pdf action "reprint") to change the document.
+
+  The <body> class list is the whole of its appearance:
+    report | editorial | memo   the look
+    dark                        light text on a dark page
+    bleed                       print to the page edge, no margins, no page
+                                numbers. REQUIRED with "dark": the page margins
+                                are painted by the printer, not by styles.css, so
+                                a dark page without "bleed" comes out framed in
+                                white.
+    large                       bigger type, for reading on a screen
+
+  styles.css beside this file is a copy: edit it freely, it affects only this
+  document. Section bodies are sanitized on render: scripts, styles and unknown
+  tags are stripped, so add content with the tags already used here.
+-->
+<head>
+<meta charset="utf-8" />
+<title>Metadata Analyzer — dokumentacja techniczna etapu 1</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body class="report">
+<article class="doc">
+  <header class="cover">
+    <div class="eyebrow">Document</div>
+    <h1>Metadata Analyzer — dokumentacja techniczna etapu 1</h1>
+    <p class="standfirst">Dokumentacja techniczna wersji 1.1 (2026-11-11) opisuje architekturę, warstwy Core, Infrastructure oraz interfejsy WPF i CLI działającego szkieletu aplikacji Metadata Analyzer na platformie .NET 10 (LTS).</p>
+    <div class="meta"><span>11 November 2026</span></div>
+  </header>
+  <section>
+    <h2>1. Cel i zakres etapu oraz wymagania i kryteria akceptacji</h2>
+<h3>Strona tytułowa</h3>
+<table>
+<tr><td><strong>Tytuł</strong></td><td>Metadata Analyzer — dokumentacja techniczna etapu 1</td></tr>
+<tr><td><strong>Wersja dokumentu</strong></td><td>1.1</td></tr>
+<tr><td><strong>Data</strong></td><td>2026-11-11</td></tr>
+<tr><td><strong>Wersja aplikacji</strong></td><td>1.0.0</td></tr>
+<tr><td><strong>Platforma</strong></td><td>.NET 10 (LTS), WPF, Windows</td></tr>
+<tr><td><strong>Stan jakości</strong></td><td>build 0 błędów / 0 ostrzeżeń, 54 z 54 testów zielonych</td></tr>
+<tr><td><strong>Źródło treści</strong></td><td><code>DOKUMENTACJA.md</code> oraz wersja PDF dokumentacji</td></tr>
+</table>
+
+<h3>Cel i zakres etapu</h3>
+<p>Celem etapu 1 jest <strong>działający szkielet</strong> aplikacji Metadata Analyzer: dwa niezależne interfejsy (WPF i CLI), wspólna logika, wspólne modele danych, rejestrowanie przebiegu działania w pliku tekstowym oraz testy jednostkowe najważniejszych funkcji.</p>
+<p>Etap 1 <strong>nie</strong> zawiera prawdziwej analizy metadanych przez <code>System.Reflection</code> ani bazy danych — dane pochodzą z dostawcy symulowanego, a logger zapisuje wyłącznie do pliku. Oba elementy są przygotowane do wymiany w kolejnych etapach dzięki interfejsom i wstrzykiwaniu zależności.</p>
+<p>Zakres dostarczony:</p>
+<ul>
+<li>rozwiązanie z 5 projektami (<code>Core</code>, <code>Infrastructure</code>, <code>WPF</code>, <code>CLI</code>, <code>Tests</code>),</li>
+<li>pełna hierarchia modeli metadanych,</li>
+<li>dostawca danych symulowanych <code>SampleLibrary.dll</code>,</li>
+<li>serwis logiki <code>MetadataService</code> + formatter prezentacji tekstowej,</li>
+<li>logger plikowy z poziomami INFO/WARNING/ERROR,</li>
+<li>okno WPF w MVVM (drzewo, panel szczegółów, pasek statusu),</li>
+<li>aplikacja konsolowa z menu i obsługą błędnych danych wejściowych,</li>
+<li>54 testy jednostkowe (xUnit + Moq),</li>
+<li>konfiguracja <code>appsettings.json</code> i kompozycja DI.</li>
+</ul>
+
+<h3>Wymagania i kryteria akceptacji</h3>
+<table>
+<thead><tr><th>#</th><th>Wymaganie etapu</th><th>Status</th><th>Realizacja / dowód</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Uruchomienie GUI WPF</td><td>✅</td><td><code>dotnet run --project MetadataAnalyzer.WPF</code>; zrzut <code>docs/wpf-preview.png</code></td></tr>
+<tr><td>2</td><td>Niezależne uruchomienie CLI</td><td>✅</td><td><code>dotnet run --project MetadataAnalyzer.CLI</code>; zapis <code>docs/cli-smoke.txt</code></td></tr>
+<tr><td>3</td><td>Wygenerowanie danych symulowanych</td><td>✅</td><td><code>MockMetadataProvider</code> (3 przestrzenie nazw, 4 klasy, 14 składników)</td></tr>
+<tr><td>4</td><td>Hierarchiczne drzewo w WPF</td><td>✅</td><td><code>TreeNodeViewModel</code> + <code>TreeView</code> z szablonem hierarchicznym</td></tr>
+<tr><td>5</td><td>Ta sama struktura w konsoli</td><td>✅</td><td><code>MetadataFormatter.FormatTree</code> — wcięcia <code>|   +--</code></td></tr>
+<tr><td>6</td><td>Szczegóły wybranego elementu</td><td>✅</td><td><code>DetailsViewModel</code> + <code>DetailsView</code>; brak przeładowania okna</td></tr>
+<tr><td>7</td><td>Rejestrowanie przebiegu w pliku</td><td>✅</td><td><code>FileLogger</code> → <code>Logs/application.log</code></td></tr>
+<tr><td>8</td><td>Testy jednostkowe</td><td>✅</td><td>54 testy, 0 niepowodzeń</td></tr>
+</tbody>
+</table>
+<p><strong>Kryterium zaliczenia (WPF):</strong> wybranie klasy w drzewie powoduje aktualizację panelu szczegółów bez przeładowania okna — spełnione: <code>TreeView.SelectedItemChanged</code> → <code>MainViewModel.SelectedNode</code> → <code>DetailsViewModel</code> → <code>ContentControl</code> w panelu prawym. Drzewo i model nie są przebudowywane.</p>
+<p><strong>Kryterium zaliczenia (CLI):</strong> ten sam <code>IMetadataService</code> co WPF — spełnione: oba interfejsy rozwiązują <code>IMetadataService</code> z kontenera DI i nie zawierają własnej logiki analizy ani generowania danych.</p>
+  </section>
+  <section>
+    <h2>2. Architektura rozwiązania</h2>
+<h3>2.1. Podział na projekty</h3>
+<pre><code>MetadataAnalyzer/
+├── MetadataAnalyzer.slnx
+├── Directory.Build.props
+│
+├── MetadataAnalyzer.Core/
+│   ├── Models/          AssemblyModel, NamespaceModel, ClassModel, MethodModel,
+│   │                    PropertyModel, FieldModel, ConstructorModel, ParameterModel,
+│   │                    MemberVisibility
+│   ├── Interfaces/      IMetadataProvider, IMetadataService, IMetadataFormatter,
+│   │                    IAppLogger, ISystemClock
+│   └── Services/        MockMetadataProvider, MetadataService, MetadataFormatter,
+│                        MetadataProviderResolver, SystemClock, LogEvents,
+│                        ServiceCollectionExtensions
+│
+├── MetadataAnalyzer.Infrastructure/
+│   ├── Configuration/   ApplicationOptions
+│   ├── Logging/         FileLogger, LoggingOptions, ServiceCollectionExtensions
+│   └── AppConfiguration.cs
+│
+├── MetadataAnalyzer.WPF/
+│   ├── Views/           MainWindow, DetailsView
+│   ├── ViewModels/      MainViewModel, AssemblyViewModel, TreeNodeViewModel,
+│   │                    DetailsViewModel, TreeNodeKind
+│   ├── Converters/      BoolToVisibilityConverter, CountToVisibilityConverter,
+│   │                    NullToVisibilityConverter
+│   ├── Themes/          Colors.xaml, Controls.xaml
+│   ├── App.xaml / App.xaml.cs
+│   ├── appsettings.json, app.manifest
+│
+├── MetadataAnalyzer.CLI/
+│   ├── Program.cs, MetadataConsoleApp.cs, ConsolePresentation.cs, appsettings.json
+│
+└── MetadataAnalyzer.Tests/
+    ├── Models/ModelTests.cs
+    ├── Services/  MockMetadataProviderTests, MetadataServiceTests, MetadataFormatterTests
+    ├── Logging/   FileLoggerTests.cs
+    ├── ViewModels/ MainViewModelTests, TreeNodeViewModelTests
+    └── Support/   Fakes.cs (FakeClock, RecordingLogger, TemporaryDirectory)</code></pre>
+<p>Poza pięcioma projektami rozwiązanie zawiera pliki poziomu repozytorium: <code>MetadataAnalyzer.slnx</code> (definicja rozwiązania), <code>Directory.Build.props</code> (wspólne ustawienia kompilacji), <code>README.md</code>, <code>DOKUMENTACJA.md</code> (wersja jednoplikowa dokumentacji) oraz katalog <code>docs/</code> z materiałami towarzyszącymi (zrzut WPF, zapis sesji CLI, wersja PDF dokumentacji).</p>
+
+<h3>2.2. Graf zależności</h3>
+<pre><code>MetadataAnalyzer.WPF ───────┐
+                            ├──&gt; MetadataAnalyzer.Core
+MetadataAnalyzer.CLI ───────┘
+
+MetadataAnalyzer.Infrastructure ──&gt; MetadataAnalyzer.Core
+
+MetadataAnalyzer.Tests ──&gt; Core + Infrastructure + WPF</code></pre>
+<p><code>Core</code> nie ma odwołań do WPF, CLI ani do konkretnej implementacji logowania. Zawiera wyłącznie modele POCO, interfejsy i logikę aplikacji. Jedynym pakietem w <code>Core</code> są abstrakcje kontenera DI (<code>Microsoft.Extensions.DependencyInjection.Abstractions</code>) — bez implementacji kontenera.</p>
+
+<h3>2.3. Przepływ danych</h3>
+<pre><code>MockMetadataProvider
+        │  AssemblyModel
+        ▼
+  MetadataService  ──(IAppLogger)──&gt;  FileLogger  ──&gt;  Logs/application.log
+        │  AssemblyModel
+   ┌────┴─────┐
+   ▼          ▼
+  WPF        CLI
+   │          │
+TreeNodeVM   MetadataFormatter.FormatTree
+DetailsVM    MetadataFormatter.FormatDetails</code></pre>
+<p>Kluczowa zasada: <strong>żaden interfejs nie generuje danych i nie implementuje analizy</strong>. WPF i CLI jedynie prezentują to, co zwróci <code>IMetadataService</code>, oraz formatują model do tekstu/logiki widoku.</p>
+  </section>
+  <section>
+    <h2>3. Modele danych Core</h2>
+<p>Wszystkie modele to niemutowalne <code>record</code> (wartościowa równość, wygodne testowanie), a kolekcje typu <code>IReadOnlyList&lt;T&gt;</code> są normalizowane w konstruktorze — nigdy nie są <code>null</code>.</p>
+
+<h3>3.1. <code>AssemblyModel</code></h3>
+<pre><code>public sealed record AssemblyModel(
+    string Name,
+    string Version,
+    string FileName,
+    IReadOnlyList&lt;NamespaceModel&gt;? Namespaces = null,
+    DateTimeOffset LoadedAt = default)</code></pre>
+<table>
+<thead><tr><th>Składowa</th><th>Typ</th><th>Znaczenie</th></tr></thead>
+<tbody>
+<tr><td><code>Name</code></td><td><code>string</code></td><td>Nazwa zestawu (<code>SampleLibrary</code>)</td></tr>
+<tr><td><code>Version</code></td><td><code>string</code></td><td>Wersja (<code>1.0.0.0</code>)</td></tr>
+<tr><td><code>FileName</code></td><td><code>string</code></td><td>Nazwa pliku (<code>SampleLibrary.dll</code>)</td></tr>
+<tr><td><code>Namespaces</code></td><td><code>IReadOnlyList&lt;NamespaceModel&gt;</code></td><td>Przestrzenie nazw (domyślnie pusta lista)</td></tr>
+<tr><td><code>LoadedAt</code></td><td><code>DateTimeOffset</code></td><td>Moment analizy (z <code>ISystemClock</code>)</td></tr>
+<tr><td><code>Classes</code></td><td><code>IEnumerable&lt;ClassModel&gt;</code></td><td>Spłaszczone klasy ze wszystkich przestrzeni</td></tr>
+<tr><td><code>NamespaceCount</code></td><td><code>int</code></td><td>Liczba przestrzeni nazw</td></tr>
+<tr><td><code>ClassCount</code></td><td><code>int</code></td><td>Liczba klas</td></tr>
+<tr><td><code>MemberCount</code></td><td><code>int</code></td><td>Łączna liczba składników (pola + właściwości + konstruktory + metody)</td></tr>
+<tr><td><code>Empty(name)</code></td><td><code>static</code></td><td>Fabryka pustego modelu — używana w testach scenariuszy brzegowych</td></tr>
+</tbody>
+</table>
+
+<h3>3.2. <code>NamespaceModel</code></h3>
+<pre><code>public sealed record NamespaceModel(string Name, IReadOnlyList&lt;ClassModel&gt;? Classes = null)</code></pre>
+<p><code>Name</code> to pełna nazwa przestrzeni (<code>SampleLibrary.Models</code>), <code>Classes</code> — klasy w przestrzeni.</p>
+
+<h3>3.3. <code>ClassModel</code></h3>
+<pre><code>public sealed record ClassModel(
+    string Name, string FullName, string? BaseType = null,
+    IReadOnlyList&lt;MethodModel&gt;? Methods = null,
+    IReadOnlyList&lt;PropertyModel&gt;? Properties = null,
+    IReadOnlyList&lt;FieldModel&gt;? Fields = null,
+    IReadOnlyList&lt;ConstructorModel&gt;? Constructors = null,
+    MemberVisibility Visibility = MemberVisibility.Public,
+    bool IsStatic = false, bool IsAbstract = false, bool IsInterface = false)</code></pre>
+<p>Dodatkowo: <code>DisplayName</code> (dla interfejsów poprzedza nazwę słowem <code>interface</code>) oraz <code>MemberCount</code> (suma liczby metod, właściwości, pól i konstruktorów). Zestaw właściwości pokrywa wymagania etapu i rozszerza je o informacje potrzebne w panelu szczegółów (<code>Visibility</code>, <code>IsStatic</code>, <code>IsAbstract</code>, <code>IsInterface</code>).</p>
+
+<h3>3.4. Składniki klasy</h3>
+<table>
+<thead><tr><th>Model</th><th>Właściwości</th><th>Uwagi</th></tr></thead>
+<tbody>
+<tr><td><code>MethodModel</code></td><td><code>Name</code>, <code>ReturnType</code>, <code>Visibility</code>, <code>IsStatic</code>, <code>Parameters</code></td><td><code>Signature</code> → <code>GetUser(int id) : User</code> (bez typu zwracanego)</td></tr>
+<tr><td><code>PropertyModel</code></td><td><code>Name</code>, <code>PropertyType</code>, <code>CanRead</code>, <code>CanWrite</code>, <code>Visibility</code>, <code>IsStatic</code></td><td><code>CanRead</code>/<code>CanWrite</code> opisują akcesory</td></tr>
+<tr><td><code>FieldModel</code></td><td><code>Name</code>, <code>FieldType</code>, <code>Visibility</code>, <code>IsStatic</code>, <code>IsReadOnly</code></td><td>pola prywatne widoczne w drzewie</td></tr>
+<tr><td><code>ConstructorModel</code></td><td><code>Visibility</code>, <code>Parameters</code></td><td><code>Signature</code> → <code>(IUserRepository userRepository)</code></td></tr>
+<tr><td><code>ParameterModel</code></td><td><code>Name</code>, <code>ParameterType</code>, <code>IsOptional</code></td><td><code>DisplayName</code> → <code>User fallback = default</code> dla opcjonalnego</td></tr>
+<tr><td><code>MemberVisibility</code></td><td><code>enum</code></td><td><code>Public, Protected, Internal, Private, ProtectedInternal, PrivateProtected</code></td></tr>
+</tbody>
+</table>
+<p><code>MethodModel.Signature</code> celowo nie zawiera typu zwracanego — formatter dokłada go osobno (<code>Method: GetFullName() : string</code>), dzięki czemu podpis jest czytelny w drzewie i w konsoli.</p>
+
+<h3>3.5. Odwzorowanie zagnieżdżeń</h3>
+<pre><code>AssemblyModel (1) ──&gt; NamespaceModel (*) ──&gt; ClassModel (*)
+                                                ├── MethodModel (*) ──&gt; ParameterModel (*)
+                                                ├── PropertyModel (*)
+                                                ├── FieldModel (*)
+                                                └── ConstructorModel (*) ──&gt; ParameterModel (*)</code></pre>
+<p>Typy zwracane i typy parametrów są przechowywane jako nazwy (<code>"User"</code>, <code>"int"</code>, <code>"IUserRepository"</code>), co pozwala odwoływać się do typów spoza analizowanego zestawu bez cyklicznych referencji obiektowych. W etapie 2, przy analizie przez <code>System.Reflection</code>, te nazwy będą uzupełniane o informację, czy typ należy do analizowanego zestawu.</p>
+
+<h3>3.6. <code>List&lt;T&gt;</code> czy <code>ObservableCollection&lt;T&gt;</code></h3>
+<p>Modele w <code>Core</code> używają <code>IReadOnlyList&lt;T&gt;</code>, ponieważ dane przekazywane są jako <strong>gotowy, niezmienny model</strong>. Kolekcja obserwowana (<code>ObservableCollection&lt;TreeNodeViewModel&gt;</code>) występuje wyłącznie w warstwie WPF — tam, gdzie drzewo jest bezpośrednio obserwowane przez kontrolkę <code>TreeView</code>.</p>
+  </section>
+  <section>
+    <h2>4. Interfejsy Core</h2>
+<pre><code>public interface IMetadataProvider
+{
+    Task&lt;AssemblyModel&gt; LoadAsync(CancellationToken cancellationToken = default);
+}
+
+public interface IMetadataService
+{
+    AssemblyModel? Current { get; }
+    Task&lt;AssemblyModel&gt; AnalyzeAsync(CancellationToken cancellationToken = default);
+    Task&lt;AssemblyModel&gt; RefreshAsync(CancellationToken cancellationToken = default);
+}
+
+public interface IMetadataFormatter
+{
+    string FormatTree(AssemblyModel assembly);
+    string FormatDetails(AssemblyModel assembly);
+    string FormatMemberDetails(ClassModel type, string memberName);
+}
+
+public interface IAppLogger
+{
+    Task LogInformationAsync(string message);
+    Task LogWarningAsync(string message);
+    Task LogErrorAsync(string message);
+}
+
+public interface ISystemClock
+{
+    DateTimeOffset Now { get; }
+}</code></pre>
+<table>
+<thead><tr><th>Interfejs</th><th>Rola</th><th>Implementacje</th></tr></thead>
+<tbody>
+<tr><td><code>IMetadataProvider</code></td><td>źródło metadanych (dziś mock, w etapie 2 refleksja)</td><td><code>MockMetadataProvider</code>, <code>MetadataProviderResolver</code></td></tr>
+<tr><td><code>IMetadataService</code></td><td>logika aplikacji: analiza, odświeżanie, bieżący model</td><td><code>MetadataService</code></td></tr>
+<tr><td><code>IMetadataFormatter</code></td><td>formatowanie modelu do tekstu (CLI, logi, eksport)</td><td><code>MetadataFormatter</code></td></tr>
+<tr><td><code>IAppLogger</code></td><td>rejestrowanie zdarzeń</td><td><code>FileLogger</code>, <code>RecordingLogger</code> (testy)</td></tr>
+<tr><td><code>ISystemClock</code></td><td>źródło czasu (testowalność <code>LoadedAt</code> i pomiaru czasu operacji)</td><td><code>SystemClock</code>, <code>FakeClock</code> (testy)</td></tr>
+</tbody>
+</table>
+<p>Parametr <code>ClassModel type</code> w <code>FormatMemberDetails</code> (a nie <code>@class</code>) to świadoma decyzja zgodna z regułą CA1716 — unikanie słów kluczowych w nazwach parametrów publicznych API.</p>
+  </section>
+  <section>
+    <h2>5. Usługi Core</h2>
+<h3>5.1. <code>MockMetadataProvider</code></h3>
+<p>Buduje pełne drzewo <code>SampleLibrary.dll</code> w metodzie <code>LoadAsync</code>. Dane tworzone są <strong>w providerze, a nie w ViewModelu</strong> — zgodnie z wymaganiem etapu. Metoda <code>BuildAssembly(DateTimeOffset)</code> jest publiczna i statyczna, dzięki czemu można jej użyć w testach bez zależności od zegara.</p>
+<p>Czas <code>LoadedAt</code> pochodzi z <code>ISystemClock</code> (wstrzyknięty przez konstruktor, opcjonalny):</p>
+<pre><code>public sealed class MockMetadataProvider(ISystemClock? clock = null) : IMetadataProvider</code></pre>
+
+<h3>5.2. <code>MetadataService</code></h3>
+<p>Odpowiedzialności:</p>
+<ul>
+<li>uruchomienie analizy (<code>AnalyzeAsync</code>) i odświeżenia (<code>RefreshAsync</code>),</li>
+<li>wywołanie providera i zapamiętanie wyniku w <code>Current</code>,</li>
+<li>logowanie startu, sukcesu, anulowania i błędu,</li>
+<li>serializacja równoległych wywołań (<code>SemaphoreSlim</code>, <code>IDisposable</code>),</li>
+<li>propagowanie wyjątku do interfejsu po zalogowaniu.</li>
+</ul>
+<p>Przepływ <code>LoadAsync</code>:</p>
+<pre><code>LogInformationAsync(startMessage)
+  └─ provider.LoadAsync(token)
+       └─ Current = assembly
+            └─ LogInformationAsync("Sample data loaded: …")
+  wyjątek? → LogErrorAsync("Metadata analysis failed: …") → rethrow
+  anulowanie? → LogWarningAsync("Metadata loading cancelled") → rethrow
+  finally → _gate.Release()</code></pre>
+
+<h3>5.3. <code>MetadataProviderResolver</code></h3>
+<p>Cienka warstwa decyzyjna pozwalająca zachować kontrakt <code>UseMockData</code> z konfiguracji bez komplikowania kompozycji DI. Gdy <code>UseMockData = false</code> (etap 2, jeszcze niezaimplementowany), rzuca <code>NotSupportedException</code> z czytelnym komunikatem zamiast po cichu zwracać dane mockowe.</p>
+
+<h3>5.4. <code>MetadataFormatter</code></h3>
+<p>Trzy operacje formatowania tekstu:</p>
+<table>
+<thead><tr><th>Metoda</th><th>Wynik</th><th>Użycie</th></tr></thead>
+<tbody>
+<tr><td><code>FormatTree</code></td><td>drzewo ASCII z wcięciami</td><td>CLI (opcja 2), logi, eksport</td></tr>
+<tr><td><code>FormatDetails</code></td><td>podsumowanie zestawu + lista przestrzeni i klas</td><td>CLI (opcja 3)</td></tr>
+<tr><td><code>FormatMemberDetails</code></td><td>szczegóły jednego składnika klasy</td><td>CLI (opcja 4)</td></tr>
+</tbody>
+</table>
+<p>Przykład <code>FormatTree</code>:</p>
+<pre><code>Assembly: SampleLibrary
+Version: 1.0.0.0
+
+|   +-- Namespace: SampleLibrary.Models
+    |   +-- Class: User
+        |   +-- Property: Id (int)
+        |   +-- Property: Name (string)
+        |   +-- Constructor: public ()
+        +-- Method: GetFullName() : string
+    +-- Class: Product
+        |   +-- Property: Id (int)
+        |   +-- Property: Price (decimal)
+        |   +-- Constructor: public ()
+        +-- Method: CalculateTax() : decimal
+|   +-- Namespace: SampleLibrary.Services</code></pre>
+<p>Szczegóły implementacyjne:</p>
+<ul>
+<li>wcięcie to powtórzone <code>"    "</code> na każdy poziom (<code>GetIndent</code>), connector <code>+-- </code> lub <code>|   +-- </code>,</li>
+<li>kolejność składników jest deterministyczna: pola → właściwości → konstruktory → metody,</li>
+<li>całe formatowanie używa <code>CultureInfo.InvariantCulture</code> (reguła CA1305 jako błąd kompilacji),</li>
+<li>puste modele (<code>AssemblyModel.Empty()</code>) obsłużone jawnie (<code>"Assembly contains no namespaces."</code>),</li>
+<li>nieznany składnik → <code>"Member:       Missing (not found)"</code> zamiast wyjątku.</li>
+</ul>
+
+<h3>5.5. <code>LogEvents</code></h3>
+<p>Centralny słownik komunikatów logu — jedna zmiana nazwy zdarzenia w jednym miejscu:</p>
+<pre><code>public const string ApplicationStarted   = "Application started";
+public const string ApplicationClosed    = "Application closed";
+public const string MetadataAnalysisStarted = "Metadata analysis started";
+public const string SampleDataLoaded     = "Sample data loaded";
+public const string MetadataDisplayed    = "Metadata displayed";
+public const string DetailsDisplayed     = "Details displayed";
+public const string MetadataAnalysisFailed = "Metadata analysis failed";
+public const string InvalidSelection     = "Invalid selection";</code></pre>
+  </section>
+  <section>
+    <h2>6. Dane symulowane SampleLibrary.dll</h2>
+<p>Dane symulowane dostarcza <code>SampleLibrary.dll</code> w wersji <code>1.0.0.0</code>:</p>
+<pre><code>SampleLibrary.dll
+│
+├── SampleLibrary.Models
+│   ├── User
+│   │   ├── Property Id : int
+│   │   ├── Property Name : string
+│   │   ├── Constructor public ()
+│   │   └── Method GetFullName() : string
+│   └── Product
+│       ├── Property Id : int
+│       ├── Property Price : decimal
+│       ├── Constructor public ()
+│       └── Method CalculateTax() : decimal
+│
+├── SampleLibrary.Services
+│   └── UserService
+│       ├── Field _userRepository : IUserRepository (private, readonly)
+│       ├── Constructor public (IUserRepository userRepository)
+│       ├── Method GetUser(int id) : User
+│       └── Method DeleteUser(int id) : bool
+│
+└── SampleLibrary.Helpers
+    └── Logger
+        ├── Constructor private ()
+        └── Method static Write(string message) : void</code></pre>
+<p>Statystyki modelu: <strong>3 przestrzenie nazw, 4 klasy, 14 składników</strong>.</p>
+<p>Dane pokrywają wszystkie rodzaje składników (pole, właściwość, konstruktor, metoda, parametr), wszystkie poziomy widoczności (public, private) oraz przypadek metody statycznej — dzięki temu każda ścieżka prezentacji jest widoczna w demo i testach.</p>
+  </section>
+  <section>
+    <h2>7. Logowanie (FileLogger)</h2>
+<h3>7.1. Format wpisu</h3>
+<pre><code>[2026-11-10 20:27:49] INFO  Application started
+[2026-11-10 20:27:49] INFO  Metadata analysis started
+[2026-11-10 20:27:49] INFO  Sample data loaded: SampleLibrary (SampleLibrary.dll)
+[2026-11-10 20:27:49] WARN  Invalid selection: '7'
+[2026-11-10 20:27:49] INFO  Application closed</code></pre>
+<p><code>[znacznik czasu] POZIOM(tab. 5 znaków) treść</code>; czas lokalny, format <code>yyyy-MM-dd HH:mm:ss</code>, kultura niezmienna. Poziomy: <code>INFO</code>, <code>WARN</code>, <code>ERROR</code>.</p>
+
+<h3>7.2. Wymagania i realizacja</h3>
+<table>
+<thead><tr><th>Wymaganie</th><th>Realizacja</th></tr></thead>
+<tbody>
+<tr><td>Poziomy INFO / WARNING / ERROR</td><td><code>LogInformationAsync</code>, <code>LogWarningAsync</code>, <code>LogErrorAsync</code></td></tr>
+<tr><td>Data i godzina w wpisie</td><td><code>DateTimeOffset.Now</code> + format niezmienny</td></tr>
+<tr><td>Dopisywanie, nie nadpisywanie</td><td><code>FileStream(FileMode.Append, FileAccess.Write, FileShare.ReadWrite)</code></td></tr>
+<tr><td>Obsługa błędów zapisu</td><td><code>catch</code> na <code>IOException</code>, <code>UnauthorizedAccessException</code>, <code>NotSupportedException</code> → komunikat <code>[logging failure]</code>, <strong>bez wyjątku na zewnątrz</strong></td></tr>
+<tr><td>Wstrzykiwanie przez DI</td><td>rejestracja <code>IAppLogger → FileLogger</code> w <code>AddMetadataAnalyzerLogging</code></td></tr>
+<tr><td>Katalog pliku</td><td>tworzony automatycznie (<code>Directory.CreateDirectory</code>)</td></tr>
+<tr><td>Ścieżka</td><td>względna rozwiązywana od <code>AppContext.BaseDirectory</code> (<code>AppConfiguration.ResolveLogFilePath</code>)</td></tr>
+<tr><td>Bezpieczeństwo wątków</td><td><code>SemaphoreSlim(1,1)</code> — wpisy nie przeplatają się; kolejność wywołań zachowana</td></tr>
+<tr><td>Możliwość wyłączenia</td><td><code>Logging:Enabled = false</code></td></tr>
+</tbody>
+</table>
+
+<h3>7.3. Zachowanie przy awarii zapisu</h3>
+<p>Logger nigdy nie przerywa działania aplikacji. Gdy zapis do pliku jest niemożliwy, próbuje poinformować o tym konsolę (<code>[logging failure] …</code>), a wywołanie kończy się sukcesem. Test <code>LogWriteFailureDoesNotThrow</code> weryfikuje ten scenariusz, wskazując jako cel plik katalogu (konstrukcja <code>path/application.log</code>, gdzie <code>path</code> jest plikiem).</p>
+
+<h3>7.4. Logowanie do konsoli</h3>
+<p><code>LoggingOptions.LogToConsole</code> domyślnie <code>true</code>, ale <strong>oba interfejsy wyłączają je</strong> (<code>logToConsole: false</code>), aby log nie zaśmiecał prezentacji CLI i nie był bezużyteczny w WPF. Można je włączyć jednym parametrem — przydatne przy diagnostyce.</p>
+  </section>
+  <section>
+    <h2>8. Konfiguracja i wstrzykiwanie zależności</h2>
+<h3>8.1. <code>appsettings.json</code></h3>
+<p>Plik jest kopiowany do katalogu wyjściowego obu aplikacji:</p>
+<pre><code>{
+  "Application": { "Name": "Metadata Analyzer", "Version": "1.0.0", "UseMockData": true },
+  "Logging": { "Enabled": true, "Provider": "File", "FilePath": "Logs/application.log" }
+}</code></pre>
+<table>
+<thead><tr><th>Klucz</th><th>Typ</th><th>Domyślna</th><th>Znaczenie</th></tr></thead>
+<tbody>
+<tr><td><code>Application:Name</code></td><td>string</td><td>Metadata Analyzer</td><td>nazwa aplikacji (WPF: tytuł okna)</td></tr>
+<tr><td><code>Application:Version</code></td><td>string</td><td>1.0.0</td><td>wersja prezentowana w UI</td></tr>
+<tr><td><code>Application:UseMockData</code></td><td>bool</td><td>true</td><td><code>true</code> = dane symulowane; <code>false</code> zarezerwowane dla etapu 2</td></tr>
+<tr><td><code>Logging:Enabled</code></td><td>bool</td><td>true</td><td>wyłączenie logowania bez zmiany kodu</td></tr>
+<tr><td><code>Logging:Provider</code></td><td>string</td><td>File</td><td>rezerwa pod logger bazodanowy (etap 4)</td></tr>
+<tr><td><code>Logging:FilePath</code></td><td>string</td><td>Logs/application.log</td><td>ścieżka względna (od katalogu aplikacji) lub bezwzględna</td></tr>
+</tbody>
+</table>
+
+<h3>8.2. Kompozycja</h3>
+<p>Jeden punkt wejścia dla obu interfejsów:</p>
+<pre><code>services.AddMetadataAnalyzer(configuration, logToConsole: false);</code></pre>
+<p>Wewnętrznie:</p>
+<pre><code>services.AddSingleton&lt;ISystemClock, SystemClock&gt;();
+services.AddSingleton&lt;IMetadataFormatter, MetadataFormatter&gt;();
+services.AddSingleton&lt;MockMetadataProvider&gt;();
+services.AddSingleton(new MetadataProviderOptions { UseMockData = application.UseMockData });
+services.AddSingleton&lt;IMetadataProvider, MetadataProviderResolver&gt;();
+services.AddSingleton&lt;IMetadataService, MetadataService&gt;();
+services.AddSingleton&lt;ApplicationOptions&gt;(application);
+services.AddSingleton(loggingOptions);
+services.AddSingleton&lt;IAppLogger&gt;(_ =&gt; new FileLogger(loggingOptions));</code></pre>
+<table>
+<thead><tr><th>Rejestracja</th><th>Cykl życia</th><th>Uzasadnienie</th></tr></thead>
+<tbody>
+<tr><td><code>ISystemClock</code></td><td>singleton</td><td>bezstanowe źródło czasu</td></tr>
+<tr><td><code>IMetadataFormatter</code></td><td>singleton</td><td>bezstanowe, czyste funkcje</td></tr>
+<tr><td><code>MockMetadataProvider</code></td><td>singleton</td><td>tanie, bezstanowe</td></tr>
+<tr><td><code>IMetadataProvider</code></td><td>singleton (resolver)</td><td>jedno miejsce decyzji o źródle danych</td></tr>
+<tr><td><code>IMetadataService</code></td><td>singleton</td><td>przechowuje <code>Current</code> i serializuje analizę</td></tr>
+<tr><td><code>IAppLogger</code></td><td>singleton</td><td>jeden uchwyt pliku, jedna kolejka wpisów</td></tr>
+</tbody>
+</table>
+
+<h3>8.3. Wymiana providera w etapie 2</h3>
+<pre><code>services.AddSingleton&lt;IMetadataProvider, ReflectionMetadataProvider&gt;();</code></pre>
+<p>Reszta kodu pozostaje bez zmian — serwis, formatter, ViewModele i CLI zależą wyłącznie od interfejsu.</p>
+  </section>
+  <section>
+    <h2>9. Interfejs WPF (MVVM)</h2>
+<h3>9.1. Układ okna</h3>
+<pre><code>┌──────────────────────────────────────────────────────────────────────────┐
+│ [MA]  Metadata Analyzer                    [ Analyze ]  [ Refresh ]      │  pasek górny
+│       SampleLibrary.dll · v1.0.0.0                                       │
+├──────────────────────────────┬───────────────────────────────────────────┤
+│ STRUCTURE   3 ns · 4 cls …   │ [Assembly]                                │
+│                              │ SampleLibrary                             │  panel szczegółów
+│ ▾ SampleLibrary   Assembly   │ SampleLibrary.dll                         │
+│   ▸ SampleLibrary.Models     │ ──────────────────────────────────────    │
+│   ▸ SampleLibrary.Services   │ Version   1.0.0.0                          │
+│   ▸ SampleLibrary.Helpers    │ Namespaces 3    Classes 4   Members 14    │
+│                              │ Namespaces: Models / Services / Helpers   │
+├──────────────────────────────┴───────────────────────────────────────────┤
+│ ● Analysis completed in 22 ms      [Namespaces 3][Classes 4][Members 14] │  pasek statusu
+└──────────────────────────────────────────────────────────────────────────┘</code></pre>
+
+<h3>9.2. ViewModele</h3>
+<table>
+<thead><tr><th>ViewModel</th><th>Odpowiedzialność</th><th>Kluczowe składowe</th></tr></thead>
+<tbody>
+<tr><td><code>MainViewModel</code></td><td>stan okna, polecenia, status</td><td><code>Assembly</code>, <code>SelectedNode</code>, <code>Details</code>, <code>StatusMessage</code>, <code>IsBusy</code>, <code>AnalyzeCommand</code>, <code>RefreshCommand</code>, <code>ClearSelectionCommand</code></td></tr>
+<tr><td><code>AssemblyViewModel</code></td><td>dane analizowanego komponentu</td><td><code>Name</code>, <code>Version</code>, <code>FileName</code>, <code>LoadedAt</code>, <code>Nodes</code>, <code>NamespaceCount</code>, <code>ClassCount</code>, <code>MemberCount</code>, <code>Summary</code>, <code>Counters</code></td></tr>
+<tr><td><code>TreeNodeViewModel</code></td><td>jeden węzeł drzewa</td><td><code>Label</code>, <code>Caption</code>, <code>Kind</code>, <code>Model</code>, <code>Children</code>, <code>HasChildren</code>, <code>IsExpanded</code>, <code>IsSelected</code>, <code>Owner</code>, <code>ToDetails()</code></td></tr>
+<tr><td><code>DetailsViewModel</code></td><td>szczegóły wybranego elementu</td><td><code>Title</code>, <code>Subtitle</code>, <code>Kind</code>, <code>Properties</code>, <code>Sections</code>, <code>HasSelection</code> + fabryki <code>FromAssembly</code>, <code>FromNamespace</code>, <code>FromClass</code>, <code>FromMethod</code>, <code>FromProperty</code>, <code>FromField</code>, <code>FromConstructor</code>, <code>FromParameter</code></td></tr>
+</tbody>
+</table>
+<p><code>DetailsViewModel</code> jest niemutowalny — zmiana wyboru podmienia cały obiekt (<code>Details = value.ToDetails()</code>), co upraszcza powiadomienia (<code>[ObservableProperty]</code> na <code>MainViewModel</code>) i eliminuje ręczne synchronizowanie dziesiątek właściwości.</p>
+
+<h3>9.3. Polecenia</h3>
+<p><code>CommunityToolkit.Mvvm</code> generuje implementacje <code>ICommand</code> z atrybutów:</p>
+<pre><code>[RelayCommand]
+private async Task AnalyzeAsync(CancellationToken cancellationToken) { … }
+
+[RelayCommand]
+private async Task RefreshAsync(CancellationToken cancellationToken) { … }
+
+[RelayCommand]
+private void ClearSelection() { … }</code></pre>
+<p>Generatory tworzą <code>AnalyzeCommand</code>, <code>RefreshCommand</code>, <code>ClearSelectionCommand</code> (typ <code>AsyncRelayCommand</code> dla metod asynchronicznych — z blokadą ponownego wykonania w trakcie pracy i przekazywaniem <code>CancellationToken</code>). Dzięki temu w projekcie nie ma ręcznie pisanych <code>RelayCommand</code>/<code>AsyncRelayCommand</code> ani powtarzalnego <code>INotifyPropertyChanged</code>.</p>
+
+<h3>9.4. Powiadamianie o zmianach</h3>
+<ul>
+<li><code>[ObservableProperty]</code> na polach <code>_assembly</code>, <code>_selectedNode</code>, <code>_details</code>, <code>_statusMessage</code>, <code>_isBusy</code>,</li>
+<li><code>partial void OnSelectedNodeChanged(TreeNodeViewModel? value)</code> — aktualizacja <code>Details</code> i statusu,</li>
+<li><code>SetProperty</code> w <code>TreeNodeViewModel</code> dla <code>IsExpanded</code>/<code>IsSelected</code>,</li>
+<li><code>OnPropertyChanged(nameof(HasMetadata))</code> i <code>OnPropertyChanged(nameof(Subtitle))</code> po wczytaniu modelu.</li>
+</ul>
+
+<h3>9.5. Code-behind</h3>
+<p><code>MainWindow.xaml.cs</code> zawiera wyłącznie:</p>
+<ol>
+<li>wstrzyknięcie <code>MainViewModel</code> przez konstruktor i przypisanie <code>DataContext</code>,</li>
+<li>obsługę <code>SelectedItemChanged</code> (jedno zdarzenie, którego <code>TreeView</code> nie da się zbindować w XAML),</li>
+<li>synchronizację widoczności pustego stanu z <code>HasMetadata</code> (obejście ograniczenia: w szablonie drzewa nie można wiązać z zasobami aplikacji — szczegóły w rozdz. 13).</li>
+</ol>
+<p>Żadnej logiki biznesowej w widoku.</p>
+
+<h3>9.6. Styl i wygląd</h3>
+<ul>
+<li><code>Themes/Colors.xaml</code> — paleta (tła <code>#10151C</code>/<code>#151B24</code>, akcent <code>#4C8DFF</code>, tekst <code>#E6EDF5</code>/<code>#9AABBD</code>),</li>
+<li><code>Themes/Controls.xaml</code> — style kontrolek: karty (<code>SurfaceCardStyle</code>), przyciski (<code>PrimaryButtonStyle</code>, <code>SecondaryButtonStyle</code>), drzewo (<code>TreeViewStyle</code>, <code>TreeViewItemStyle</code>), pasek przewijania, odznaki,</li>
+<li>typografia: <code>Segoe UI Variable Text</code> dla UI, <code>Cascadia Mono</code> dla nazw typów i podpisów,</li>
+<li>kolorowe kropki przy węzłach (zestaw / przestrzeń / klasa) ułatwiają orientację w hierarchii,</li>
+<li>drzewo bez ramek, z zaokrąglonym podświetleniem wiersza; ikona rozwinięcia to obracający się trójkąt.</li>
+</ul>
+
+<h3>9.7. Zachowanie interakcji</h3>
+<table>
+<thead><tr><th>Akcja</th><th>Efekt</th></tr></thead>
+<tbody>
+<tr><td><code>Analyze</code></td><td>ładuje dane mockowe, przebudowuje drzewo, pokazuje szczegóły zestawu, status <code>Analysis completed in N ms</code></td></tr>
+<tr><td><code>Refresh</code></td><td>to samo przez <code>IMetadataService.RefreshAsync</code> (osobna ścieżka logowania)</td></tr>
+<tr><td>Klik w węzeł</td><td><code>Details</code> aktualizowane natychmiast, drzewo nietknięte</td></tr>
+<tr><td>Rozwinięcie węzła</td><td><code>IsExpanded</code> w ViewModelu (stan zachowany przy przewijaniu)</td></tr>
+<tr><td>Błąd analizy</td><td>status <code>Analysis failed: …</code>, log <code>ERROR</code>, okno pozostaje sprawne</td></tr>
+<tr><td>Praca w toku</td><td>status <code>… in progress…</code>, wskaźnik w pasku statusu zmienia kolor; kolejne wywołanie ignorowane (<code>IsBusy</code>)</td></tr>
+</tbody>
+</table>
+  </section>
+  <section>
+    <h2>10. Interfejs CLI</h2>
+<h3>10.1. Menu</h3>
+<pre><code>========================================
+           METADATA ANALYZER
+========================================
+
+[1] Load simulated metadata
+[2] Display assembly structure
+[3] Display assembly details
+[4] Display member details
+[0] Exit
+
+State: Ready (no metadata loaded) | Namespaces: 0 | Classes: 0 | Last operation: -
+Select option:</code></pre>
+<table>
+<thead><tr><th>Opcja</th><th>Działanie</th><th>Log</th></tr></thead>
+<tbody>
+<tr><td><code>1</code></td><td><code>IMetadataService.AnalyzeAsync</code> + podsumowanie</td><td>INFO ×2</td></tr>
+<tr><td><code>2</code></td><td><code>FormatTree</code> + <code>Analysis completed successfully.</code></td><td>—</td></tr>
+<tr><td><code>3</code></td><td><code>FormatDetails</code> (liczniki, lista przestrzeni i klas)</td><td>—</td></tr>
+<tr><td><code>4</code></td><td>wybór klasy (lista numerowana) → wybór składnika → <code>FormatMemberDetails</code></td><td>—</td></tr>
+<tr><td><code>0</code></td><td>wyjście (<code>Goodbye.</code>)</td><td>INFO <code>Application closed</code></td></tr>
+<tr><td>inna</td><td><code>Invalid option 'X'. Choose one of: 1, 2, 3, 4, 0.</code></td><td>WARN <code>Invalid selection: 'X'</code></td></tr>
+</tbody>
+</table>
+
+<h3>10.2. Odporność na błędy wejścia</h3>
+<ul>
+<li>opcja spoza zakresu → ostrzeżenie + log WARN, powrót do menu,</li>
+<li><code>2</code>/<code>3</code>/<code>4</code> bez wczytanych danych → <code>No metadata loaded. Select option 1 first.</code>,</li>
+<li>numer klasy/składnika spoza zakresu → <code>Invalid number. Enter a value between 1 and N.</code>,</li>
+<li>koniec strumienia wejścia (EOF, np. przy przekierowaniu) → czyste wyjście z kodu <code>0</code>,</li>
+<li><code>Ctrl+C</code> → <code>CancellationToken</code> → <code>Operation cancelled.</code> i kod wyjścia <code>1</code>,</li>
+<li>nieoczekiwany wyjątek → log ERROR + komunikat na <code>stderr</code> + kod wyjścia <code>1</code>.</li>
+</ul>
+
+<h3>10.3. Struktura kodu</h3>
+<table>
+<thead><tr><th>Klasa</th><th>Odpowiedzialność</th></tr></thead>
+<tbody>
+<tr><td><code>Program</code></td><td>konfiguracja, DI, obsługa <code>Ctrl+C</code>, kody wyjścia</td></tr>
+<tr><td><code>MetadataConsoleApp</code></td><td>pętla menu, obsługa opcji, wybór klasy i składnika</td></tr>
+<tr><td><code>ConsolePresentation</code></td><td>cała warstwa wizualna: nagłówek, stopka, menu, kolory, etykiety, tabela wyboru</td></tr>
+</tbody>
+</table>
+<p>Rozdzielenie prezentacji od logiki sterowania ułatwia testowanie (wejście/wyjście jako <code>TextReader</code>/<code>TextWriter</code> wstrzykiwane przez DI) i późniejszą wymianę na bogatszy interfejs.</p>
+  </section>
+  <section>
+    <h2>11. Testy jednostkowe</h2>
+<h3>11.1. Narzędzia i organizacja</h3>
+<ul>
+<li><strong>xUnit 2.9.3</strong>, <strong>Moq 4.21.0</strong>, <code>Microsoft.NET.Test.Sdk</code>, <code>coverlet.collector</code>,</li>
+<li>projekt <code>net10.0-windows</code> (testuje też ViewModele WPF),</li>
+<li>struktura katalogów odpowiada warstwom: <code>Models/</code>, <code>Services/</code>, <code>Logging/</code>, <code>ViewModels/</code>, <code>Support/</code>,</li>
+<li><code>Support/Fakes.cs</code> — <code>FakeClock</code> (sterowalny zegar), <code>RecordingLogger</code> (zapis wpisów w listach), <code>TemporaryDirectory</code> (izolowany katalog z automatycznym sprzątaniem).</li>
+</ul>
+
+<h3>11.2. Wynik</h3>
+<pre><code>Powodzenie! — niepowodzenie: 0, powodzenie: 54, pominięto: 0, łącznie: 54</code></pre>
+
+<h3>11.3. Zakres pokrycia</h3>
+<table>
+<thead><tr><th>Obszar</th><th>Testy</th><th>Sprawdzane zachowania</th></tr></thead>
+<tbody>
+<tr><td><code>ModelTests</code></td><td>7</td><td>puste modele, agregacja liczników, <code>MemberCount</code>, podpisy metod i konstruktorów, domyślne puste kolekcje, równość wartościowa</td></tr>
+<tr><td><code>MockMetadataProviderTests</code></td><td>6</td><td>nazwa/wersja/plik, struktura 3 ns / 4 klasy, wymagane klasy i składniki, <code>LoadedAt</code> z zegara, świeże instancje, anulowanie</td></tr>
+<tr><td><code>MetadataServiceTests</code></td><td>7</td><td>model z providera, logi start/sukces, błąd + rethrow + <code>Current == null</code>, anulowanie + WARN, przekazanie <code>CancellationToken</code>, <code>RefreshAsync</code> podmienia model, <code>Current</code> puste przed analizą</td></tr>
+<tr><td><code>MetadataFormatterTests</code></td><td>10</td><td>nagłówek, hierarchia i wcięcia, pusty model, <code>null</code> → <code>ArgumentNullException</code>, liczniki, metoda/właściwość/nieznany składnik, pusty <code>memberName</code>, niezależność od kultury (pl-PL vs invariant)</td></tr>
+<tr><td><code>FileLoggerTests</code></td><td>9</td><td>zapis INFO/WARN/ERROR, format z datą, dopisywanie, tworzenie katalogu, wyłączenie, awaria zapisu bez wyjątku, 20 równoległych wpisów, ścieżka absolutna</td></tr>
+<tr><td><code>MainViewModelTests</code></td><td>9</td><td>stan początkowy, wczytanie + drzewo, status z czasem, wybór klasy bez ponownej analizy (kryterium zaliczenia), szczegóły metody, czyszczenie wyboru, błąd + log, <code>Refresh</code>, ignorowanie wywołania w trakcie pracy</td></tr>
+<tr><td><code>TreeNodeViewModelTests</code></td><td>6</td><td>pełna hierarchia, węzły parametrów, szczegóły klasy/parametru/zestawu, powiadomienia o zmianie <code>IsExpanded</code>/<code>IsSelected</code></td></tr>
+</tbody>
+</table>
+
+<h3>11.4. Przykład testu kryterium zaliczenia</h3>
+<pre><code>[Fact]
+public async Task SelectingNodeUpdatesDetailsWithoutReloading()
+{
+    _service.Setup(s =&gt; s.AnalyzeAsync(It.IsAny&lt;CancellationToken&gt;())).ReturnsAsync(assembly);
+
+    var viewModel = CreateViewModel();
+    await viewModel.AnalyzeCommand.ExecuteAsync(null);
+
+    viewModel.SelectedNode = viewModel.Assembly!.Nodes[0].Children[0].Children[0];
+
+    Assert.Equal("User", viewModel.Details.Title);
+    Assert.Equal("Class", viewModel.Details.Kind);
+    _service.Verify(s =&gt; s.AnalyzeAsync(It.IsAny&lt;CancellationToken&gt;()), Times.Once);
+}</code></pre>
+
+<h3>11.5. Scenariusze brzegowe pokryte testami</h3>
+<ul>
+<li>pusty model (<code>AssemblyModel.Empty()</code>),</li>
+<li>model z jedną przestrzenią nazw,</li>
+<li>model z kilkoma klasami i wieloma metodami,</li>
+<li>niepoprawna operacja (błąd providera, nieznany składnik, pusty argument),</li>
+<li>błąd zapisu logu (plik zamiast katalogu),</li>
+<li>anulowanie operacji,</li>
+<li>równoległe wywołania loggera,</li>
+<li>kultura <code>pl-PL</code> vs <code>InvariantCulture</code>.</li>
+</ul>
+  </section>
+  <section>
+    <h2>12. Instrukcja obsługi</h2>
+<h3>12.1. Wymagania</h3>
+<ul>
+<li>Windows 10/11 (WPF),</li>
+<li>.NET SDK 10.0.x (w tym środowisku: <code>C:/Users/anysz/.dotnet</code>, poza <code>PATH</code>),</li>
+<li>opcjonalnie Rider / Visual Studio 2026 (obsługują <code>MetadataAnalyzer.slnx</code>).</li>
+</ul>
+
+<h3>12.2. Build i testy</h3>
+<pre><code>dotnet build MetadataAnalyzer.slnx
+dotnet test  MetadataAnalyzer.Tests/MetadataAnalyzer.Tests.csproj</code></pre>
+<p>Oczekiwany wynik: <code>Kompilacja powiodła się. 0 błędów, 0 ostrzeżeń</code>, <code>powodzenie: 54</code>.</p>
+
+<h3>12.3. Aplikacja WPF</h3>
+<pre><code>dotnet run --project MetadataAnalyzer.WPF</code></pre>
+<ol>
+<li>Kliknij <strong>Analyze</strong> — drzewo pojawi się po lewej, szczegóły zestawu po prawej.</li>
+<li>Rozwiń <code>SampleLibrary</code> → <code>SampleLibrary.Models</code> → <code>User</code>.</li>
+<li>Kliknij klasę — panel szczegółów pokaże właściwości, metody, pola i konstruktory.</li>
+<li>Kliknij metodę lub parametr — panel pokaże podpis, typ zwracany i listę parametrów.</li>
+<li><strong>Refresh</strong> wczytuje dane ponownie (osobny wpis w logu).</li>
+</ol>
+
+<h3>12.4. Aplikacja CLI</h3>
+<pre><code>dotnet run --project MetadataAnalyzer.CLI</code></pre>
+<p>Wpisz <code>1</code>, potem <code>2</code> (drzewo), <code>3</code> (podsumowanie), <code>4</code> (szczegóły składnika), <code>0</code> (wyjście). Zapis przykładowej sesji: <code>docs/cli-smoke.txt</code>.</p>
+
+<h3>12.5. Log</h3>
+<p>Plik <code>Logs/application.log</code> powstaje obok pliku wykonywalnego:</p>
+<ul>
+<li>WPF: <code>MetadataAnalyzer.WPF/bin/Debug/net10.0-windows/Logs/application.log</code>,</li>
+<li>CLI: <code>MetadataAnalyzer.CLI/bin/Debug/net10.0/Logs/application.log</code>.</li>
+</ul>
+<p>Aby zmienić lokalizację, podaj ścieżkę bezwzględną w <code>appsettings.json</code> (<code>Logging:FilePath</code>).</p>
+  </section>
+  <section>
+    <h2>13. Decyzje projektowe, clean code, ograniczenia, plan etapu 2 i rozwiązywanie problemów</h2>
+<h3>13.1. Decyzje projektowe i uzasadnienia</h3>
+<table>
+<thead><tr><th>Decyzja</th><th>Uzasadnienie</th></tr></thead>
+<tbody>
+<tr><td><code>.slnx</code> zamiast <code>.sln</code></td><td>domyślny format nowych rozwiązań .NET 10; rozwiązanie można w razie potrzeby przekonwertować</td></tr>
+<tr><td><code>Directory.Build.props</code></td><td>jedno miejsce wspólnych ustawień (<code>Nullable</code>, <code>TreatWarningsAsErrors</code>, analizatory) dla wszystkich projektów</td></tr>
+<tr><td><code>record</code> dla modeli</td><td>niemutowalność, równość wartościowa, czytelne <code>init</code>-owe kolekcje</td></tr>
+<tr><td><code>IReadOnlyList&lt;T&gt;</code> w <code>Core</code>, <code>ObservableCollection</code> w WPF</td><td>model jest danymi, nie UI; obserwacja kolekcji należy do warstwy prezentacji</td></tr>
+<tr><td><code>ISystemClock</code></td><td>deterministyczne testy <code>LoadedAt</code> i pomiaru czasu operacji</td></tr>
+<tr><td><code>MetadataProviderResolver</code></td><td>zachowanie klucza konfiguracji <code>UseMockData</code> bez duplikacji kompozycji DI</td></tr>
+<tr><td><code>SemaphoreSlim</code> w serwisie i loggerze</td><td>brak przeplatania wpisów logu i podwójnej analizy</td></tr>
+<tr><td><code>DetailsViewModel</code> jako niemutowalna całość</td><td>mniej powiadomień, brak stanów pośrednich, prostsze testy</td></tr>
+<tr><td>Formatter poza UI</td><td>CLI, logi i przyszły eksport korzystają z jednej implementacji</td></tr>
+<tr><td>Brak komentarzy w kodzie</td><td>kod opisuje się nazwami; intencja widoczna w sygnaturach i testach</td></tr>
+<tr><td>Analizatory jako błędy</td><td>wymusza invariantne formatowanie i czystą strukturę od pierwszego commita</td></tr>
+<tr><td>Styl ciemny</td><td>czytelność przy długiej pracy z kodem; spójna paleta w jednym pliku</td></tr>
+</tbody>
+</table>
+<p><strong>Ograniczenie techniczne XAML (świadome obejście):</strong> w szablonie <code>TreeViewItem</code> nie można użyć <code>StaticResource</code> odwołującego się do zasobów zdefiniowanych w <code>App.xaml</code> (szablon ładuje się w innym kontekście — błąd <code>XamlParseException: Cannot find resource named 'BoolToVisibility'</code>). Rozwiązanie: widoczność przycisku rozwinięcia sterowana triggerem <code>HasItems</code> w samym szablonie, a widoczność pustego stanu — kodem w <code>MainWindow.xaml.cs</code> reagującym na <code>HasMetadata</code>.</p>
+
+<h3>13.2. Zgodność z clean code</h3>
+<ul>
+<li><strong>Jedna odpowiedzialność:</strong> model / provider / serwis / formatter / logger / ViewModel / widok.</li>
+<li><strong>Brak komentarzy</strong> — nazwy metod mówią, co robią (<code>TryParseIndex</code>, <code>DescribeConstructor</code>, <code>AppendChildren</code>, <code>ResolveLogFilePath</code>).</li>
+<li><strong>Brak duplikacji:</strong> <code>LogEvents</code> (komunikaty), <code>DetailsViewModel</code> (fabryki szczegółów), <code>ConsolePresentation</code> (warstwa wizualna CLI), <code>GetIndent</code> (wcięcia drzewa).</li>
+<li><strong>Małe metody</strong>, wcześnie wychodzące (<code>return</code>, <code>continue</code>), maksymalnie jedna decyzja na metodę.</li>
+<li><strong>Zabezpieczenia kontraktów:</strong> <code>ArgumentNullException.ThrowIfNull</code>, <code>ArgumentException.ThrowIfNullOrWhiteSpace</code>, <code>NotNullWhen(true)</code> w <code>TryGetAssembly</code>.</li>
+<li><strong>Niezmienność</strong> modeli i <code>DetailsViewModel</code>; brak setterów publicznych tam, gdzie nie są potrzebne.</li>
+<li><strong>Asynchroniczność</strong> z <code>CancellationToken</code> od UI po provider; brak <code>.Result</code>/<code>.Wait()</code> w kodzie produkcyjnym.</li>
+<li><strong>Obsługa błędów</strong> na granicy warstw (serwis loguje i propaguje, UI prezentuje, logger nigdy nie rzuca).</li>
+<li><strong>Formatowanie niezależne od kultury</strong> — wymuszone przez analizator CA1305 (błąd kompilacji).</li>
+<li><strong>Testy czytelne jak specyfikacja</strong> — nazwy w stylu <code>AnalyzeFailureShowsErrorAndLogsIt</code>.</li>
+<li><strong>Kod ostrzeżeń zero</strong> — brak <code>#pragma warning disable</code>, brak <code>&lt;NoWarn&gt;</code>.</li>
+</ul>
+
+<h3>13.3. Znane ograniczenia etapu 1</h3>
+<ol>
+<li>Dane pochodzą wyłącznie z mocka — brak analizy rzeczywistych plików <code>.dll</code>.</li>
+<li>Logowanie tylko do pliku; logger bazodanowy zarezerwowany na etap 4 (<code>Logging:Provider</code>).</li>
+<li>Brak wyszukiwania i filtrowania w drzewie (etap 2+).</li>
+<li>Brak eksportu raportu (JSON/CSV) — <code>IMetadataFormatter</code> jest na to przygotowany.</li>
+<li>Ustawienia są tylko do odczytu z <code>appsettings.json</code> (bez edycji w UI).</li>
+<li>Brak testów UI (widoków XAML) — testowane są ViewModele i logika; zgodnie z wymaganiem etapu.</li>
+<li><code>Application:UseMockData = false</code> rzuca <code>NotSupportedException</code> do czasu implementacji refleksji.</li>
+<li>Aplikacja WPF działa tylko na Windows (WPF nie jest cross-platform).</li>
+</ol>
+
+<h3>13.4. Plan etapu 2</h3>
+<ol>
+<li><code>ReflectionMetadataProvider : IMetadataProvider</code> — analiza wskazanego pliku <code>.dll</code> przez <code>System.Reflection</code>.</li>
+<li>Uzupełnienie modeli o informacje potrzebne z metadanych (atrybuty, typy ogólne, interfejsy, dziedziczenie).</li>
+<li>Okno wyboru pliku w WPF i parametr ścieżki w CLI.</li>
+<li>Filtrowanie i wyszukiwanie w drzewie.</li>
+<li>Rozszerzenie testów o próbkę zestawu testowego (<code>TestAssembly.dll</code>) i scenariusze błędnych plików.</li>
+</ol>
+
+<h3>13.5. Rozwiązywanie problemów</h3>
+<table>
+<thead><tr><th>Objaw</th><th>Przyczyna</th><th>Rozwiązanie</th></tr></thead>
+<tbody>
+<tr><td><code>dotnet: command not found</code></td><td>SDK nie jest w <code>PATH</code></td><td>dodaj <code>C:/Users/anysz/.dotnet</code> do <code>PATH</code> lub używaj pełnej ścieżki</td></tr>
+<tr><td><code>You must install .NET to run this application</code></td><td>uruchamianie <code>.exe</code> bez <code>dotnet</code> w <code>PATH</code></td><td>uruchamiaj przez <code>dotnet run --project …</code></td></tr>
+<tr><td>Brak pliku <code>Logs/application.log</code></td><td><code>Logging:Enabled = false</code> lub brak praw zapisu</td><td>ustaw <code>Enabled: true</code>, sprawdź uprawnienia katalogu wyjściowego</td></tr>
+<tr><td>Log zawiera <code>[logging failure] …</code></td><td>plik/katalog zablokowany lub ścieżka wskazuje plik</td><td>popraw <code>Logging:FilePath</code></td></tr>
+<tr><td>Okno WPF puste po <code>Analyze</code></td><td>błąd analizy — sprawdź pasek statusu i log</td><td>przeczytaj wpis <code>ERROR</code> w logu</td></tr>
+<tr><td><code>XamlParseException</code> przy starcie</td><td>brak zasobu w kontekście szablonu</td><td>nie wiąż zasobów aplikacji w <code>ControlTemplate</code>; użyj triggerów</td></tr>
+<tr><td>CLI kończy się od razu</td><td>zamknięty strumień wejścia (przekierowanie)</td><td>uruchom interaktywnie w konsoli</td></tr>
+</tbody>
+</table>
+
+<h3>13.6. Historia wersji dokumentu</h3>
+<table>
+<thead><tr><th>Wersja</th><th>Data</th><th>Zmiany</th></tr></thead>
+<tbody>
+<tr><td>1.0</td><td>2026-11-10</td><td>pierwsze wydanie</td></tr>
+<tr><td>1.1</td><td>2026-11-11</td><td>usunięcie wersji online, ujednolicenie nazwy <code>SampleLibrary.dll</code>, poprawki spisu treści</td></tr>
+</tbody>
+</table>
+  </section>
+</article>
+</body>
+</html>
