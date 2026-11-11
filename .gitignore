@@ -1,0 +1,16 @@
+# Build
+bin/
+obj/
+*.user
+
+# Logs (runtime)
+Logs/
+
+# IDE
+.idea/
+*.user
+
+# Node / VitePress
+node_modules/
+.vitepress/cache/
+.vitepress/dist/
