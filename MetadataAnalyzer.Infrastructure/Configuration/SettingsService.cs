@@ -50,6 +50,9 @@ public static class SettingsService
                 ["Version"] = ApplicationOptions.DefaultVersion,
                 ["UseMockData"] = settings.UseMockData,
                 ["AssemblyPath"] = configuration?.AssemblyPath,
+                ["RepositoryPath"] = string.IsNullOrWhiteSpace(configuration?.RepositoryPath)
+                    ? "Repository"
+                    : configuration.RepositoryPath,
                 ["ShowDetailsPanel"] = settings.ShowDetailsPanel,
             },
             [LoggingOptions.SectionName] = new Dictionary<string, object?>

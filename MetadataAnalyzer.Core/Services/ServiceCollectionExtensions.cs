@@ -9,7 +9,8 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         bool useMockData = true,
         string? assemblyPath = null,
-        ReflectionMetadataOptions? reflectionOptions = null)
+        ReflectionMetadataOptions? reflectionOptions = null,
+        XmlMetadataRepositoryOptions? repositoryOptions = null)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -20,7 +21,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ReflectionMetadataProvider>();
         services.AddSingleton(new MetadataProviderOptions { UseMockData = useMockData, FilePath = assemblyPath });
         services.AddSingleton<IMetadataProvider, MetadataProviderResolver>();
-        services.AddSingleton<IMetadataRepository, InMemoryMetadataRepository>();
+        services.AddSingleton(repositoryOptions ?? new XmlMetadataRepositoryOptions());
+        services.AddSingleton(provider => new XmlMetadataRepository(
+            provider.GetRequiredService<XmlMetadataRepositoryOptions>(),
+            provider.GetService<IAppLogger>()));
+        services.AddSingleton<IMetadataRepository>(provider => provider.GetRequiredService<XmlMetadataRepository>());
         services.AddSingleton<IMetadataService, MetadataService>();
 
         return services;

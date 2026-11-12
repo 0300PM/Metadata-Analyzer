@@ -36,7 +36,7 @@ public sealed class MetadataProviderResolver(IServiceProvider services, Metadata
     {
         var filePath = source.FilePath ?? options.FilePath;
 
-        if (options.UseMockData && filePath is null)
+        if (string.IsNullOrWhiteSpace(filePath) && options.UseMockData)
         {
             return services.GetRequiredService<MockMetadataProvider>().LoadAsync(source, cancellationToken);
         }

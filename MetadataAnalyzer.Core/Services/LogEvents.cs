@@ -26,6 +26,24 @@ public static class LogEvents
 
     public const string MetadataNotFound = "Metadata not found";
 
+    public const string MetadataUpdated = "Metadata updated";
+
+    public const string MetadataUnchanged = "Metadata unchanged";
+
+    public const string MetadataDeleted = "Metadata deleted";
+
+    public const string MetadataAnalysisCompleted = "Metadata analysis completed";
+
+    public const string MetadataSaveStarted = "Metadata save started";
+
+    public const string MetadataLoadStarted = "Metadata load started";
+
+    public const string RepositoryWriteFailed = "Metadata XML write failed";
+
+    public const string RepositoryReadFailed = "Metadata XML read failed";
+
+    public const string RepositoryUnavailable = "Metadata repository unavailable";
+
     public const string MetadataRepositoryFailed = "Metadata repository operation failed";
 
     public const string InvalidSelection = "Invalid selection";

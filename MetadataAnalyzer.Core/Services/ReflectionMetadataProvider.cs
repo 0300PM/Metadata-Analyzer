@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security;
 using System.Runtime.InteropServices;
 using MetadataAnalyzer.Core.Interfaces;
 using MetadataAnalyzer.Core.Models;
@@ -33,7 +34,8 @@ public sealed class ReflectionMetadataProvider(
             throw new InvalidOperationException("The reflection metadata provider requires an assembly file path.");
         }
 
-        var filePath = Path.GetFullPath(source.FilePath!);
+        var filePath = ResolvePath(source.FilePath!);
+
         if (!File.Exists(filePath))
         {
             throw new FileNotFoundException($"Assembly file not found: {filePath}", filePath);
@@ -41,11 +43,35 @@ public sealed class ReflectionMetadataProvider(
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var bytes = await File.ReadAllBytesAsync(filePath, cancellationToken).ConfigureAwait(false);
+        var bytes = await ReadAllBytesAsync(filePath, cancellationToken).ConfigureAwait(false);
         var loadedAt = clock?.Now ?? DateTimeOffset.Now;
 
         return await Task.Run(() => Read(bytes, filePath, loadedAt, cancellationToken), cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    private static string ResolvePath(string filePath)
+    {
+        try
+        {
+            return Path.GetFullPath(filePath);
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            throw new ArgumentException($"The assembly path is not valid: {filePath}", exception);
+        }
+    }
+
+    private static async Task<byte[]> ReadAllBytesAsync(string filePath, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await File.ReadAllBytesAsync(filePath, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or SecurityException)
+        {
+            throw new InvalidDataException($"The assembly file could not be read: {filePath}", exception);
+        }
     }
 
     private AssemblyModel Read(byte[] bytes, string filePath, DateTimeOffset loadedAt, CancellationToken cancellationToken)
@@ -173,6 +199,10 @@ public sealed class ReflectionMetadataProvider(
         catch (ReflectionTypeLoadException exception)
         {
             types = exception.Types.Where(type => type is not null).ToArray()!;
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or TypeLoadException or BadImageFormatException)
+        {
+            types = [];
         }
 
         foreach (var type in types.OrderBy(type => type.FullName, StringComparer.Ordinal))
