@@ -34,7 +34,7 @@ public static class AppConfiguration
 
         services.AddSingleton(configuration);
         services.AddSingleton(application);
-        services.AddMetadataAnalyzerCore(application.UseMockData);
+        services.AddMetadataAnalyzerCore(application.UseMockData, application.AssemblyPath);
         services.AddMetadataAnalyzerLogging(options =>
         {
             options.Enabled = logging.Enabled;

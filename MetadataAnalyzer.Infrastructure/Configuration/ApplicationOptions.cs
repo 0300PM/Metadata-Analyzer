@@ -14,5 +14,7 @@ public sealed class ApplicationOptions
 
     public bool UseMockData { get; set; } = true;
 
+    public string? AssemblyPath { get; set; }
+
     public bool ShowDetailsPanel { get; set; } = true;
 }
