@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Metadata Analyzer — Etap 2, Sekcja 6</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d1117; color: #c9d1d9; font: 15px/1.6 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 40px 28px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; color: #f0f6fc; }
+  h2 { font-size: 18px; margin: 36px 0 12px; color: #f0f6fc; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  .lead { color: #8b949e; margin: 0 0 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .card { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; }
+  .card .k { color: #8b949e; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .card .v { font-size: 22px; color: #f0f6fc; font-weight: 600; margin-top: 4px; }
+  .ok { color: #3fb950; }
+  code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px; }
+  code { background: #1f242c; padding: 1px 6px; border-radius: 5px; color: #e6edf3; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #21262d; vertical-align: top; }
+  th { color: #8b949e; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  ul { margin: 8px 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  pre { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; overflow-x: auto; color: #d2a8ff; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #1f6feb22; color: #58a6ff; border: 1px solid #1f6feb55; }
+  .muted { color: #8b949e; }
+</style>
+</head>
+<body>
+<main>
+  <span class="tag">Etap 2 · Sekcja 6</span>
+  <h1>Wejście z rzeczywistego pliku: WPF i CLI oraz filtrowanie drzewa</h1>
+  <p class="lead">Aplikacja analizuje pliki <code>.dll</code>/<code>.exe</code> wskazane przez użytkownika — w WPF przez okno wyboru pliku, w CLI przez argument wiersza poleceń — a drzewo metadanych można filtrować po nazwie. Dane symulowane pozostają dostępne jako osobna, jawna akcja.</p>
+
+  <div class="grid">
+    <div class="card"><div class="k">Build</div><div class="v ok">0 błędów / 0 ostrzeżeń</div></div>
+    <div class="card"><div class="k">Testy</div><div class="v ok">169 / 169 zielonych</div></div>
+    <div class="card"><div class="k">Nowe testy</div><div class="v">7</div></div>
+    <div class="card"><div class="k">Pliki zmienione</div><div class="v">12</div></div>
+  </div>
+
+  <h2>1. Wybór pliku w WPF</h2>
+  <ul>
+    <li><code>MainViewModel.UseAssemblyPicker(Func&lt;string?&gt;)</code> — widok wstrzykuje okno wyboru pliku, ViewModel pozostaje wolny od <code>System.Windows.Forms</code>.</li>
+    <li><code>OpenAssemblyCommand</code> pyta o plik i wywołuje <code>AnalyzeAsync(new MetadataSource(path), token)</code>; anulowanie okna daje status <code>Open cancelled.</code> bez wywołania usługi.</li>
+    <li><code>MainWindow.PickAssemblyFile()</code> — <code>OpenFileDialog</code> z filtrem <code>*.dll;*.exe</code>, katalogiem startowym <code>AppContext.BaseDirectory</code> i sprawdzaniem istnienia pliku.</li>
+    <li>Menu <code>File</code> zawiera teraz jawną pozycję <code>Load Sample Assembly</code> — dane symulowane nie są już efektem ubocznym <code>Open</code>.</li>
+    <li><code>MainViewModel.LoadSampleAsync</code> przekazuje <code>MetadataSource.Empty</code>, więc nie zależy od okna wyboru.</li>
+  </ul>
+
+  <h2>2. Argument ścieżki w CLI</h2>
+  <ul>
+    <li><code>Program.Main</code> wybiera pierwszy argument niebędący przełącznikiem (<code>-</code>/<code>--</code>) i przekazuje go do <code>MetadataConsoleApp.RunAsync(path, token)</code>.</li>
+    <li>Analiza wykonuje się przed wyświetleniem menu; nieudane wczytanie kończy się komunikatem <code>Analysis failed: …</code> i kodem wyjścia <code>1</code>.</li>
+    <li>Logowanie nieoczekiwanego wyjątku przechodzi przez <code>LogErrorAsync("Unhandled CLI failure", exception)</code>, więc łańcuch przyczyn trafia do pliku logu.</li>
+  </ul>
+  <pre>dotnet run --project MetadataAnalyzer.CLI -- "C:\libs\SampleAssembly.dll"</pre>
+  <pre>Assembly analyzed: SampleAssembly 1.0.0.0
+Location:      C:\libs\SampleAssembly.dll
+Namespaces:    1
+Types:         8</pre>
+
+  <h2>3. Filtrowanie drzewa metadanych</h2>
+  <ul>
+    <li><code>MainViewModel.SearchText</code> (z <code>UpdateSourceTrigger=PropertyChanged</code>) filtruje drzewo po każdej zmianie; <code>HasSearch</code> steruje przyciskiem <code>Clear</code>, a status pokazuje liczbę trafień.</li>
+    <li><code>TreeNodeViewModel.IsVisible</code> + <code>DataTrigger</code> w <code>AssemblyTreeViewItemStyle</code> ukrywają niepasujące węzły (bez łamania szablonu kontrolki).</li>
+    <li><code>TreeNodeViewModel.ApplyFilter(text, expandMatches)</code> zwraca liczbę trafień i rozświetla ścieżkę do dopasowań; przy filtrowaniu z UI (<code>expandMatches: false</code>) nie zmienia stanu rozwinięcia, więc czyszczenie filtra przywraca poprzedni widok.</li>
+    <li><code>AssemblyViewModel.ApplyFilter(null)</code> czyści filtr i zeruje licznik; filtr jest ponownie stosowany po każdym wczytaniu assembly.</li>
+  </ul>
+
+  <h2>4. Poprawki wykryte przy weryfikacji</h2>
+  <table>
+    <tr><th>Problem</th><th>Przyczyna</th><th>Rozwiązanie</th></tr>
+    <tr>
+      <td>Aplikacja nie startowała (<code>StaticResourceHolder</code>)</td>
+      <td><code>StaticResource BoolToVisibility</code> użyty w słowniku ładowanym przed <code>App.xaml</code></td>
+      <td><code>DataTrigger</code> zamiast konwertera — brak zależności od zasobów aplikacji</td>
+    </tr>
+    <tr>
+      <td><code>Load Sample</code> analizował plik z konfiguracji</td>
+      <td><code>MetadataProviderResolver</code> wybierał mock tylko przy braku ścieżki</td>
+      <td>Jawny wybór: ścieżka &gt; mock (gdy dozwolony) &gt; błąd konfiguracji</td>
+    </tr>
+    <tr>
+      <td>Błąd wczytywania assembly raportowany jako <code>InvalidSource</code></td>
+      <td><code>AssemblyAnalysisException</code> nie miała mapowania w <code>Translate</code></td>
+      <td>Mapowanie na <code>MetadataErrorCode.InvalidAssembly</code></td>
+    </tr>
+    <tr>
+      <td>Ostrzeżenia CA1822 w projekcie fixture</td>
+      <td>Metody próbki celowo nieużywające stanu instancji</td>
+      <td><code>CA1822</code> w <code>NoWarn</code> projektu fixture — build 0 ostrzeżeń</td>
+    </tr>
+  </table>
+
+  <h2>5. Testy</h2>
+  <table>
+    <tr><th>Test</th><th>Zakres</th></tr>
+    <tr><td><code>OpenUsesPickedFileAsSource</code></td><td>Ścieżka z okna wyboru trafia do <code>AnalyzeAsync</code></td></tr>
+    <tr><td><code>OpenIsSkippedWhenPickerIsCancelled</code></td><td>Anulowanie nie wywołuje usługi</td></tr>
+    <tr><td><code>LoadSampleIgnoresPicker</code></td><td>Próbka działa bez okna wyboru (<code>MetadataSource.Empty</code>)</td></tr>
+    <tr><td><code>SearchFiltersTreeAndReportsMatches</code></td><td>Widoczność węzłów, licznik i status</td></tr>
+    <tr><td><code>ClearingSearchRestoresEveryNode</code></td><td>Powrót do pełnego drzewa</td></tr>
+    <tr><td><code>SearchIsReappliedAfterReload</code></td><td>Filtr utrzymany po ponownym wczytaniu</td></tr>
+    <tr><td><code>ResolverPrefersConfiguredFileOverMockData</code></td><td>Ścieżka z konfiguracji ma pierwszeństwo nad mockiem</td></tr>
+  </table>
+
+  <h2>6. Weryfikacja ręczna</h2>
+  <ul>
+    <li>WPF: <code>Open</code> → okno wyboru → anulowanie daje <code>Open cancelled.</code>; <code>Load Sample Assembly</code> ładuje próbkę, filtr <code>User</code> daje <code>15 matching elements</code> i zawęża drzewo.</li>
+    <li>CLI: analiza pliku <code>SampleAssembly.dll</code> z argumentu — <code>SampleAssembly 1.0.0.0</code>, 1 przestrzeń nazw, 8 typów; nieistniejąca ścieżka kończy się <code>Analysis failed: …</code>.</li>
+  </ul>
+
+  <p class="muted">Stan po sekcji 6: build <span class="ok">0 błędów / 0 ostrzeżeń</span>, testy <span class="ok">169 / 169</span>.</p>
+</main>
+</body>
+</html>

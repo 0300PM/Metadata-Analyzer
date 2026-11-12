@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Metadata Analyzer — audyt Etapu 2 (sekcje 1–5)</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d1117; color: #c9d1d9; font: 15px/1.6 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 40px 28px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; color: #f0f6fc; }
+  h2 { font-size: 18px; margin: 34px 0 12px; color: #f0f6fc; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  h3 { font-size: 15px; margin: 22px 0 8px; color: #e6edf3; }
+  .lead { color: #8b949e; margin: 0 0 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .card { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; }
+  .card .k { color: #8b949e; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .card .v { font-size: 22px; color: #f0f6fc; font-weight: 600; margin-top: 4px; }
+  .ok { color: #3fb950; }
+  .warn { color: #d29922; }
+  code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px; }
+  code { background: #1f242c; padding: 1px 6px; border-radius: 5px; color: #e6edf3; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #21262d; vertical-align: top; }
+  th { color: #8b949e; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  ul { margin: 8px 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  pre { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; overflow-x: auto; color: #d2a8ff; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #1f6feb22; color: #58a6ff; border: 1px solid #1f6feb55; }
+  .muted { color: #8b949e; }
+  .yes { color: #3fb950; font-weight: 600; }
+  .partial { color: #d29922; font-weight: 600; }
+  .no { color: #f85149; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <span class="tag">Audyt · Etap 2, sekcje 1–5</span>
+  <h1>Co jest zrobione, a czego brakuje</h1>
+  <p class="lead">Weryfikacja punkt po punkcie na podstawie kodu w repozytorium, nie na podstawie raportów. Sprawdzone: modele, interfejsy, provider refleksji, repozytorium XML, warstwa usługowa, asynchroniczność, logowanie, obsługa błędów.</p>
+
+  <div class="grid">
+    <div class="card"><div class="k">Build</div><div class="v ok">0 błędów / 0 ostrzeżeń</div></div>
+    <div class="card"><div class="k">Testy</div><div class="v ok">162 / 162</div></div>
+    <div class="card"><div class="k">Punkty zakresu</div><div class="v">44 / 46</div></div>
+    <div class="card"><div class="k">Braki blokujące</div><div class="v warn">0</div></div>
+  </div>
+
+  <h2>1. Podsumowanie per sekcja</h2>
+  <table>
+    <tr><th>Sekcja</th><th>Status</th><th>Uwagi</th></tr>
+    <tr><td>1 — modele i interfejsy</td><td class="yes">✔ zrobione</td><td>Wszystkie wymagane informacje, rodzaje typów, <code>IMetadataRepository</code>, async w <code>IMetadataService</code>, Core bez zależności od WPF/Infrastructure.</td></tr>
+    <tr><td>2 — analiza refleksji</td><td class="yes">✔ zrobione</td><td><code>MetadataLoadContext</code>, brak wykonywania kodu, odporność na brak zależności, 26 testów, fixture <code>SampleAssembly</code>.</td></tr>
+    <tr><td>3 — repozytorium XML</td><td class="yes">✔ zrobione</td><td>Zapis atomowy, UTF-8, aktualizacja, lista, usuwanie, odporne czytanie, konfigurowalna lokalizacja.</td></tr>
+    <tr><td>4 — MetadataService</td><td class="yes">✔ zrobione</td><td>Analyze / Save / Load / Refresh / List / Delete, DI, brak zależności od <code>XmlMetadataRepository</code>.</td></tr>
+    <tr><td>5 — async, logi, błędy</td><td class="yes">✔ zrobione</td><td>10/10 przypadków błędnych, anulowanie jako osobna ścieżka, łańcuch wyjątków w logu.</td></tr>
+  </table>
+
+  <h2>2. Sekcja 1 — szczegóły</h2>
+  <table>
+    <tr><th>Punkt zakresu</th><th>Status</th><th>Dowód</th></tr>
+    <tr><td>Nazwa, wersja, lokalizacja pliku</td><td class="yes">✔</td><td><code>AssemblyModel</code>: <code>Name</code>, <code>Version</code>, <code>FilePath</code>, <code>Location</code>, <code>FullName</code>, <code>Culture</code>, <code>PublicKeyToken</code>, <code>RuntimeVersion</code></td></tr>
+    <tr><td>Przestrzenie nazw, typy, klasy bazowe, interfejsy</td><td class="yes">✔</td><td><code>NamespaceModel</code>, <code>ClassModel.BaseType</code>, <code>Interfaces</code></td></tr>
+    <tr><td>Konstruktory, metody, właściwości, pola, parametry, typy zwracane, modyfikatory</td><td class="yes">✔</td><td><code>ConstructorModel</code>, <code>MethodModel.ReturnType</code>, <code>PropertyModel</code>, <code>FieldModel</code>, <code>ParameterModel</code>, <code>MemberVisibility</code></td></tr>
+    <tr><td>Klasy, interfejsy, struktury, enumy, delegaty</td><td class="yes">✔</td><td><code>TypeKind</code> + rozpoznawanie delegata przez łańcuch <code>BaseType</code></td></tr>
+    <tr><td>Rozbudowa <code>IMetadataProvider</code></td><td class="yes">✔</td><td><code>MetadataSource</code> + <code>LoadAsync(source, token)</code></td></tr>
+    <tr><td><code>IMetadataRepository</code></td><td class="yes">✔</td><td>Save / Load / LoadLatest / List / Delete / Name</td></tr>
+    <tr><td>Async w <code>IMetadataService</code> + <code>CancellationToken</code></td><td class="yes">✔</td><td>wszystkie metody</td></tr>
+    <tr><td>Core niezależny od WPF/Infrastructure</td><td class="yes">✔</td><td>graf zależności projektu bez zmian</td></tr>
+  </table>
+
+  <h2>3. Sekcja 2 — szczegóły</h2>
+  <table>
+    <tr><th>Punkt zakresu</th><th>Status</th><th>Dowód</th></tr>
+    <tr><td>Analiza rzeczywistych <code>.dll</code>/<code>.exe</code></td><td class="yes">✔</td><td><code>ReflectionMetadataProvider</code> + <code>PathAssemblyResolver</code></td></tr>
+    <tr><td>Brak wykonywania kodu analizowanego assembly</td><td class="yes">✔</td><td><code>MetadataLoadContext</code>, test <code>DoesNotExecuteAnalysedCode</code></td></tr>
+    <tr><td>Błędy ładowania nie wywalają aplikacji</td><td class="yes">✔</td><td><code>ReflectionTypeLoadException</code> → częściowe typy, <code>SafeMembers</code>, tryby <code>IsOverride</code>/<code>RawDefaultValue</code></td></tr>
+    <tr><td>Brak zależności</td><td class="yes">✔</td><td>test <code>LoadAsyncHandlesMissingDependencies</code> + kod <code>MissingDependency</code></td></tr>
+    <tr><td>Fixture <code>TestAssembly.dll</code> (nazwa z planu Etapu 1)</td><td class="partial">≈</td><td>istnieje jako <code>Fixtures/SampleAssembly</code> — ta sama rola, inna nazwa</td></tr>
+  </table>
+
+  <h2>4. Sekcja 3 — szczegóły</h2>
+  <table>
+    <tr><th>Punkt zakresu</th><th>Status</th><th>Dowód</th></tr>
+    <tr><td>Zapis i odczyt wyników</td><td class="yes">✔</td><td><code>XmlMetadataRepository</code> + DTO + mapper</td></tr>
+    <tr><td>Aktualizacja istniejącej analizy</td><td class="yes">✔</td><td>nazwa pliku z nazwy assembly, nadpisanie bez duplikatów</td></tr>
+    <tr><td>Odporność na uszkodzone dokumenty</td><td class="yes">✔</td><td><code>RepositoryDocumentException</code>, filtr root elementu na liście</td></tr>
+    <tr><td>Atomowość zapisu</td><td class="yes">✔</td><td>plik <code>.tmp</code> + <code>File.Move(overwrite)</code>, test zachowania poprzedniej wersji</td></tr>
+    <tr><td>Konfigurowalna lokalizacja, UTF-8, async I/O</td><td class="yes">✔</td><td><code>Application:RepositoryPath</code>, brak BOM, <code>useAsync</code></td></tr>
+  </table>
+
+  <h2>5. Sekcja 4 — szczegóły</h2>
+  <table>
+    <tr><th>Punkt zakresu</th><th>Status</th><th>Dowód</th></tr>
+    <tr><td><code>AnalyzeAsync</code>, <code>SaveAsync</code>, <code>LoadAsync</code>, <code>RefreshAsync</code></td><td class="yes">✔</td><td>+ <code>AnalyzeAndSaveAsync</code>, <code>LoadLatestAsync</code>, <code>DeleteAsync</code>, <code>ListAsync</code></td></tr>
+    <tr><td>Integracja provider ↔ repozytorium w jednej warstwie</td><td class="yes">✔</td><td><code>MetadataService</code> zna tylko interfejsy</td></tr>
+    <tr><td>Logika nie zależy od <code>XmlMetadataRepository</code></td><td class="yes">✔</td><td>test na <code>InMemoryMetadataRepository</code></td></tr>
+    <tr><td>DI: rejestracja refleksji i repozytorium XML</td><td class="yes">✔</td><td><code>AddMetadataAnalyzerCore</code></td></tr>
+    <tr><td>Możliwość mockowania w testach</td><td class="yes">✔</td><td>Moq na <code>IMetadataProvider</code> i <code>IMetadataRepository</code></td></tr>
+    <tr><td>Spójny sposób przekazywania błędów</td><td class="yes">✔</td><td><code>MetadataServiceException</code> + <code>UserMessage</code></td></tr>
+  </table>
+
+  <h2>6. Sekcja 5 — szczegóły</h2>
+  <table>
+    <tr><th>Przypadek wymagany</th><th>Status</th><th>Kod / obsługa</th></tr>
+    <tr><td>Nieistniejący plik</td><td class="yes">✔</td><td><code>SourceNotFound</code></td></tr>
+    <tr><td>Nieprawidłowa ścieżka</td><td class="yes">✔</td><td><code>InvalidSource</code> (+ zbyt długa ścieżka)</td></tr>
+    <tr><td>Brak uprawnień do odczytu</td><td class="yes">✔</td><td><code>AccessDenied</code></td></tr>
+    <tr><td>Nieobsługiwany format pliku</td><td class="yes">✔</td><td><code>InvalidAssembly</code> (<code>BadImageFormatException</code>)</td></tr>
+    <tr><td>Uszkodzone assembly</td><td class="yes">✔</td><td><code>InvalidDataException</code> → <code>InvalidAssembly</code></td></tr>
+    <tr><td>Brak zależności</td><td class="yes">✔</td><td><code>MissingDependency</code></td></tr>
+    <tr><td>Nieprawidłowy dokument XML</td><td class="yes">✔</td><td><code>RepositoryCorrupted</code></td></tr>
+    <tr><td>Brak uprawnień do zapisu</td><td class="yes">✔</td><td><code>AccessDenied</code></td></tr>
+    <tr><td>Anulowanie analizy</td><td class="yes">✔</td><td><code>OperationCanceledException</code>, ostrzeżenie w logu, brak zapisu</td></tr>
+    <tr><td>Nieoczekiwany wyjątek</td><td class="yes">✔</td><td>zawinięty, <code>InnerException</code> zachowany, pełny łańcuch w logu</td></tr>
+  </table>
+
+  <h2>7. Braki i niespójności</h2>
+  <h3>Brakujące (poza zakresem sekcji 1–5)</h3>
+  <ul>
+    <li><span class="no">✖</span> <b>Okno wyboru pliku w WPF</b> — przycisk i pozycja menu <code>Open Assembly…</code> wywołują <code>AnalyzeAsync()</code> bez źródła, więc zawsze zwracają dane symulowane. Brak <code>OpenFileDialog</code>. To punkt 3 planu Etapu 2 z <code>DOKUMENTACJA.md</code>; nie został opisany w sekcjach 1–5, ale jest potrzebny, żeby WPF w ogóle analizował prawdziwe pliki.</li>
+    <li><span class="no">✖</span> <b>Parametr ścieżki w CLI</b> — <code>Program.Main(string[] args)</code> ignoruje argumenty; ścieżkę podaje się wyłącznie interaktywnie (opcja 5).</li>
+    <li><span class="no">✖</span> <b>Filtrowanie i wyszukiwanie w drzewie</b> — brak <code>SearchText</code> w <code>MainViewModel</code>/<code>AssemblyViewModel</code>. Punkt 4 planu Etapu 2.</li>
+    <li><span class="no">✖</span> <b>Atrybuty w modelach</b> — plan Etapu 2 wspomina „atrybuty”; model przechowuje tylko <code>IsFlagsEnum</code> i informację o <code>CompilerGenerated</code> (do filtrowania). Nie było tego w zakresie sekcji 1–5.</li>
+  </ul>
+  <h3>Niespójności drobne</h3>
+  <ul>
+    <li><span class="partial">≈</span> <code>MetadataServiceException</code> ma kody <code>Cancelled</code> i <code>Unknown</code>, ale anulowanie jest zawsze rzucane jako <code>OperationCanceledException</code>, więc <code>Cancelled</code> nie jest nigdy użyty. Świadome (anulowanie ≠ błąd), ale warto wiedzieć.</li>
+    <li><span class="partial">≈</span> <code>MetadataErrorCode.InvalidAssembly</code> jest wartością domyślną dla nieoczekiwanych wyjątków providera — nieoczekiwany błąd dostaje kod „nieprawidłowe assembly”, a nie <code>Unknown</code>.</li>
+    <li><span class="partial">≈</span> <code>InMemoryMetadataRepository</code> nie jest już rejestrowane w DI — zostaje jako implementacja do testów i podmiany.</li>
+    <li><span class="partial">≈</span> Raporty sekcji 3–5 leżą w <code>docs/*.html</code>; <code>DOKUMENTACJA.md</code> nadal opisuje Etap 1 (brak sekcji o Etapie 2).</li>
+  </ul>
+
+  <h2>8. Weryfikacja</h2>
+  <pre>dotnet build MetadataAnalyzer.slnx   → 0 błędów, 0 ostrzeżeń
+dotnet test  MetadataAnalyzer.Tests → 162/162 (14 plików testowych)
+
+Pokrycie sekcji 1–5: 44 / 46 punktów zakresu (2 punkty to plan Etapu 2,
+niewchodzące w opis sekcji 1–5: okno wyboru pliku w WPF, argument CLI).</pre>
+</main>
+</body>
+</html>
