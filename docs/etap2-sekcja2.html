@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Metadata Analyzer — Etap 2, Sekcja 2</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d1117; color: #c9d1d9; font: 15px/1.6 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 40px 28px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; color: #f0f6fc; }
+  h2 { font-size: 18px; margin: 36px 0 12px; color: #f0f6fc; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  .lead { color: #8b949e; margin: 0 0 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .card { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; }
+  .card .k { color: #8b949e; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .card .v { font-size: 22px; color: #f0f6fc; font-weight: 600; margin-top: 4px; }
+  .ok { color: #3fb950; }
+  code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px; }
+  code { background: #1f242c; padding: 1px 6px; border-radius: 5px; color: #e6edf3; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #21262d; vertical-align: top; }
+  th { color: #8b949e; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  ul { margin: 8px 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  pre { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; overflow-x: auto; color: #d2a8ff; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #1f6feb22; color: #58a6ff; border: 1px solid #1f6feb55; }
+  .muted { color: #8b949e; }
+</style>
+</head>
+<body>
+<main>
+  <span class="tag">Etap 2 · Sekcja 2</span>
+  <h1>Analizator Reflection — podsumowanie wdrożenia</h1>
+  <p class="lead">Analiza rzeczywistych plików <code>.dll</code> i <code>.exe</code> przez <code>System.Reflection.MetadataLoadContext</code>: assembly nie jest wykonywane ani ładowane do kontekstu aplikacji, a pliki są zwalniane po odczycie.</p>
+
+  <div class="grid">
+    <div class="card"><div class="k">Build</div><div class="v ok">0 błędów / 0 ostrzeżeń</div></div>
+    <div class="card"><div class="k">Testy</div><div class="v ok">106 / 106 zielonych</div></div>
+    <div class="card"><div class="k">Nowe pliki</div><div class="v">4</div></div>
+    <div class="card"><div class="k">Usunięte</div><div class="v">1 (<code>FileMetadataProvider</code>)</div></div>
+  </div>
+
+  <h2>1. Izolowane ładowanie metadanych</h2>
+  <ul>
+    <li><code>ReflectionMetadataProvider</code> (Core/Services) zastępuje dotychczasowy <code>FileMetadataProvider</code>. Kontrakt <code>IMetadataProvider</code> pozostał bez zmian.</li>
+    <li>Odczyt przez <code>MetadataLoadContext</code> + <code>PathAssemblyResolver</code> — assembly jest tylko czytane, kod analizowanego pliku nigdy się nie uruchamia, plik nie zostaje zablokowany.</li>
+    <li>Ścieżki rozwiązywania zależności: analizowany plik, opcjonalnie katalog pliku (<code>ProbeAssemblyDirectory</code>), ścieżki dodatkowe (<code>ProbingPaths</code>) oraz biblioteki środowiska uruchomieniowego.</li>
+    <li><code>MetadataLoadContext</code> jest zwalniany po zbudowaniu modelu (<code>using</code>), więc równoległe analizy nie współdzielą stanu.</li>
+    <li>Odczyt pliku asynchroniczny (<code>File.ReadAllBytesAsync</code>) i cała analiza na puli wątków z <code>CancellationToken</code> — UI pozostaje responsywne.</li>
+  </ul>
+
+  <h2>2. Odporność na błędy</h2>
+  <table>
+    <tr><th>Sytuacja</th><th>Reakcja</th></tr>
+    <tr><td>Brak pliku</td><td><code>FileNotFoundException</code> z pełną ścieżką</td></tr>
+    <tr><td>Plik nie-.NET / uszkodzony obraz</td><td><code>InvalidDataException</code> (opakowane <code>BadImageFormatException</code> / <code>FileLoadException</code>)</td></tr>
+    <tr><td>Brak zależności typu</td><td>typ pomijany, pozostałe metadane czytane dalej (<code>ReflectionTypeLoadException</code>, <code>TypeLoadException</code>, <code>FileNotFoundException</code> w członkach)</td></tr>
+    <tr><td>Operacje niewspierane przez <code>MetadataLoadContext</code></td><td>bezpieczne obejścia: <code>GetBaseDefinition</code> → brak informacji o nadpisaniu, <code>DefaultValue</code> → <code>RawDefaultValue</code></td></tr>
+    <tr><td>Anulowanie</td><td><code>OperationCanceledException</code>, sprawdzane przed odczytem i przy każdej iteracji typów i metod</td></tr>
+    <tr><td>Błąd wejścia/wyjścia przy analizie z resolvera</td><td><code>AssemblyAnalysisException</code> z zachowanym <code>InnerException</code></td></tr>
+  </table>
+
+  <h2>3. Co jest odczytywane</h2>
+  <ul>
+    <li>Tożsamość assembly: nazwa, wersja, pełna nazwa, kultura, token klucza publicznego, wersja środowiska, ścieżka i data analizy.</li>
+    <li>Typy: klasa, interfejs, struktura, enumeracja, delegat — rozpoznawanie delegata po łańcuchu klas bazowych (<code>System.MulticastDelegate</code>), co działa też w kontekście metadanych.</li>
+    <li>Typy zagnieżdżone (z kwalifikowaną nazwą <code>Outer+Nested</code>), generyczne (parametry typu i metody), klasy bazowe, implementowane interfejsy, <code>sealed</code>, <code>abstract</code>, <code>static</code>.</li>
+    <li>Konstruktory (instancji i statyczne), metody (typy zwracane, <code>abstract</code>/<code>virtual</code>/<code>override</code>/<code>extension</code>), właściwości (akcesory, widoczność settera, indeksery), pola (<code>const</code>, <code>readonly</code>, <code>static</code>).</li>
+    <li>Parametry: pozycja, wartość domyślna, modyfikatory <code>ref</code>/<code>out</code>/<code>in</code>; enumeracje: wartości liczbowe i flaga <code>[Flags]</code>.</li>
+    <li>Członkowie generowani przez kompilator są domyślnie pomijani (<code>IncludeCompilerGeneratedMembers</code> pozwala je włączyć).</li>
+  </ul>
+
+  <h2>4. Wydajność</h2>
+  <ul>
+    <li>Kolekcje <code>ImmutableArray&lt;T&gt;</code> w providerze — brak dodatkowych kopii przy budowie modelu.</li>
+    <li>Jedno przejście po typach: sortowanie po <code>FullName</code> i grupowanie w przestrzenie nazw w trakcie enumeracji.</li>
+    <li>Kontekst metadanych tworzony raz na analizę, listy ścieżek deduplikowane (<code>Distinct</code>), odczyt pliku jednym przebiegiem.</li>
+    <li>Odczyty członków w blokach <code>SafeMembers</code> — pojedynczy brakujący typ nie powoduje wielokrotnych wyjątków.</li>
+  </ul>
+
+  <h2>5. Zmiany w pozostałych warstwach</h2>
+  <ul>
+    <li><code>MetadataProviderResolver</code>: jawna ścieżka pliku (źródło lub konfiguracja) zawsze wybiera analizę rzeczywistą; dane symulowane tylko przy braku ścieżki — opcja CLI <code>5</code> działa teraz również przy <code>UseMockData=true</code>.</li>
+    <li>DI: <code>AddMetadataAnalyzerCore(useMockData, assemblyPath, reflectionOptions)</code> rejestruje <code>ReflectionMetadataOptions</code>.</li>
+    <li>Model: <code>ClassModel</code> — <code>GenericParameters</code>, <code>IsNested</code>, <code>DeclaringTypeName</code>, <code>IsFlagsEnum</code>, <code>QualifiedName</code>, <code>KindLabel</code>, <code>TypeSummary</code>; <code>MethodModel</code> — parametry generyczne w sygnaturze; <code>AssemblyModel</code> — <code>FullName</code>, <code>Culture</code>, <code>PublicKeyToken</code>, <code>IsStrongNamed</code>.</li>
+    <li>UI: bez zmian układu — drzewo pokazuje dopisek typu bazowego, panel szczegółów dokłada wiersze „Generic Parameters” i „Declaring Type” tylko wtedy, gdy mają treść.</li>
+    <li>Usunięto <code>FileMetadataProvider</code> (zastąpiony w całości), testy przeniesione do <code>ReflectionMetadataProviderTests</code>.</li>
+  </ul>
+
+  <h2>6. Weryfikacja</h2>
+  <pre>dotnet build MetadataAnalyzer.slnx   → 0 błędów, 0 ostrzeżeń
+dotnet test  MetadataAnalyzer.Tests → 106/106 (w tym 19 nowych testów providera)
+
+CLI, opcja 5 → SampleAssembly.dll
+  Assembly analyzed: SampleAssembly 1.0.0.0
+  Namespaces: 1   Types: 8
+  +-- Interface: ISampleContract
+  +-- Class: SampleBase`1      (generyczna, klasa bazowa)
+  +-- Delegate: SampleHandler
+  +-- Enum: SampleOptions [Flags]
+  +-- Struct: SamplePoint
+  +-- Class: SampleService
+  +-- Nested: Nested</pre>
+  <p class="muted">Nowe testy pokrywają: tożsamość assembly, klasyfikację pięciu rodzajów typów, klasy bazowe i interfejsy, typy generyczne (typ i metoda), konstruktory i modyfikatory dostępu, parametry <code>ref</code>/<code>out</code>/<code>in</code> z wartościami domyślnymi, właściwości i pola, wartości enumeracji (niezależne od kultury), typy zagnieżdżone i opcję ich pomijania, brak wykonywania kodu analizowanego assembly, brak pliku, niepoprawny obraz, anulowanie, brak zależności oraz wybór providera w resolverze.</p>
+  <p class="muted">Fixture <code>MetadataAnalyzer.Tests/Fixtures/SampleAssembly</code> to osobny projekt budowany raz i kopiowany do katalogu testów jako dane wejściowe — nie jest ładowany jako referencja.</p>
+</main>
+</body>
+</html>

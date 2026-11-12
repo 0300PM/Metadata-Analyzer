@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Metadata Analyzer — Etap 2, Sekcja 1</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d1117; color: #c9d1d9; font: 15px/1.6 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 40px 28px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; color: #f0f6fc; }
+  h2 { font-size: 18px; margin: 36px 0 12px; color: #f0f6fc; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  .lead { color: #8b949e; margin: 0 0 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .card { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; }
+  .card .k { color: #8b949e; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .card .v { font-size: 22px; color: #f0f6fc; font-weight: 600; margin-top: 4px; }
+  .ok { color: #3fb950; }
+  code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px; }
+  code { background: #1f242c; padding: 1px 6px; border-radius: 5px; color: #e6edf3; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #21262d; vertical-align: top; }
+  th { color: #8b949e; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  td code { white-space: nowrap; }
+  ul { margin: 8px 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  pre { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; overflow-x: auto; color: #d2a8ff; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #1f6feb22; color: #58a6ff; border: 1px solid #1f6feb55; }
+  .muted { color: #8b949e; }
+</style>
+</head>
+<body>
+<main>
+  <span class="tag">Etap 2 · Sekcja 1</span>
+  <h1>Modele i interfejsy — podsumowanie wdrożenia</h1>
+  <p class="lead">Warstwa Core przygotowana do analizy rzeczywistych plików <code>.dll</code>/<code>.exe</code> i trwałego zapisu wyników. UI i logika istniejąca pozostawione bez zmian poza miejscami wymuszonymi nowymi właściwościami.</p>
+
+  <div class="grid">
+    <div class="card"><div class="k">Build</div><div class="v ok">0 błędów / 0 ostrzeżeń</div></div>
+    <div class="card"><div class="k">Testy</div><div class="v ok">87 / 87 zielonych</div></div>
+    <div class="card"><div class="k">Nowe pliki</div><div class="v">7</div></div>
+    <div class="card"><div class="k">Zmienione pliki</div><div class="v">30</div></div>
+  </div>
+
+  <h2>1. Modele (Core/Models)</h2>
+  <table>
+    <tr><th>Model</th><th>Co doszło</th></tr>
+    <tr><td><code>AssemblyModel</code></td><td>lokalizacja pliku (<code>FilePath</code>), rodzaj źródła (<code>AssemblyLocation</code>: None / File / Memory), wersja środowiska (<code>RuntimeVersion</code>), <code>HasFile</code>, <code>IsLoaded</code></td></tr>
+    <tr><td><code>ClassModel</code></td><td>klasy bazowe (<code>BaseType</code>), implementowane interfejsy (<code>Interfaces</code>, <code>ImplementsInterfaces</code>), <code>IsSealed</code>, <code>IsGeneric</code>, <code>AssemblyName</code></td></tr>
+    <tr><td><code>TypeKind</code></td><td>klasa, interfejs, struktura, enumeracja oraz <strong>delegat</strong></td></tr>
+    <tr><td><code>ConstructorModel</code></td><td>konstruktory instancji i statyczne (<code>IsStatic</code>, <code>Modifier</code>)</td></tr>
+    <tr><td><code>MethodModel</code></td><td>typy zwracane, <code>abstract</code> / <code>virtual</code> / <code>override</code> / <code>extension</code> (<code>Modifier</code>)</td></tr>
+    <tr><td><code>PropertyModel</code></td><td>akcesory (<code>Accessors</code>), widoczność settera, indeksery</td></tr>
+    <tr><td><code>FieldModel</code></td><td><code>const</code> / <code>static readonly</code> / <code>readonly</code> (<code>Modifier</code>)</td></tr>
+    <tr><td><code>ParameterModel</code></td><td>pozycja, wartość domyślna, modyfikatory <code>ref</code> / <code>out</code> / <code>in</code></td></tr>
+    <tr><td><code>EnumMemberModel</code></td><td>wartość liczbowa obok tekstowej</td></tr>
+    <tr><td><code>MemberVisibility</code></td><td>bez zmian — mapowana z <code>System.Reflection</code> (public, protected, internal, private, protected internal, private protected)</td></tr>
+  </table>
+
+  <h2>2. Interfejsy (Core/Interfaces)</h2>
+  <ul>
+    <li><code>IMetadataProvider</code> — <code>LoadAsync(CancellationToken)</code> oraz <code>LoadAsync(MetadataSource, CancellationToken)</code>; <code>MetadataSource</code> niesie ścieżkę do pliku.</li>
+    <li><code>IMetadataRepository</code> — <code>Name</code>, <code>SaveAsync</code>, <code>LoadAsync</code>, <code>LoadLatestAsync</code>, <code>ListAsync</code>, <code>DeleteAsync</code>; brak zależności od konkretnego magazynu.</li>
+    <li><code>IMetadataService</code> — operacje asynchroniczne: <code>AnalyzeAsync(source)</code>, <code>RefreshAsync</code>, <code>LoadAsync</code>, <code>SaveAsync</code>, <code>ListAsync</code>, <code>Current</code> — wszystkie z <code>CancellationToken</code>.</li>
+    <li><code>IMetadataFormatter</code>, <code>IAppLogger</code>, <code>ISystemClock</code> — bez zmian kontraktu.</li>
+  </ul>
+
+  <h2>3. Implementacje w Core (bez WPF i Infrastructure)</h2>
+  <ul>
+    <li><code>FileMetadataProvider</code> — analiza rzeczywistych plików przez <code>System.Reflection</code>: nazwa i wersja assembly, ścieżka, przestrzenie nazw, typy (klasa/interfejs/struktura/enumeracja/delegat), klasy bazowe, interfejsy, konstruktory, metody, właściwości, pola, parametry, typy zwracane, modyfikatory dostępu. Odporne na <code>ReflectionTypeLoadException</code>; brak pliku → <code>FileNotFoundException</code>, plik nie-.NET → <code>InvalidDataException</code>.</li>
+    <li><code>InMemoryMetadataRepository</code> — domyślne repozytorium wyników (<code>IMetadataRepository</code>).</li>
+    <li><code>MetadataProviderResolver</code> — wybiera dane symulowane albo analizę pliku na podstawie konfiguracji (<code>Application:UseMockData</code>, <code>Application:AssemblyPath</code>).</li>
+    <li><code>MetadataService</code> — analiza, odświeżanie, zapis, odczyt i lista wyników, każda operacja logowana i przerywalna.</li>
+    <li>DI: <code>AddMetadataAnalyzerCore(useMockData, assemblyPath)</code> rejestruje oba providery, repozytorium i serwis.</li>
+  </ul>
+
+  <h2>4. Zmiany wymuszone poza Core</h2>
+  <ul>
+    <li><code>TypeKind.Delegate</code> → <code>TreeNodeKind.Delegate</code> + ikona <code>delegate.svg</code>, panel szczegółów pokazuje sekcję „Interfaces”.</li>
+    <li><code>MetadataFormatter</code> — linia „Location” i „Modifier” w szczegółach składnika.</li>
+    <li>CLI — opcje <code>5</code> (analiza pliku), <code>6</code> (zapis do repozytorium), <code>7</code> (odczyt z repozytorium).</li>
+    <li><code>SettingsService</code> — zapis <code>AssemblyPath</code> bez utraty kluczy w <code>appsettings.json</code>.</li>
+  </ul>
+
+  <h2>5. Weryfikacja</h2>
+  <pre>dotnet build MetadataAnalyzer.slnx   → 0 błędów, 0 ostrzeżeń
+dotnet test  MetadataAnalyzer.Tests → 87/87 (w tym 27 nowych)
+CLI: opcja 5 → MetadataAnalyzer.Core.dll → 3 przestrzenie nazw, typy, modyfikatory</pre>
+  <p class="muted">Testy pokrywają: analizę prawdziwego assembly, klasyfikację typów, klasy bazowe i interfejsy, brak pliku i niepoprawny obraz, anulowanie, zapis/odczyt/listę/usuwanie w repozytorium, rejestrację DI.</p>
+</main>
+</body>
+</html>
