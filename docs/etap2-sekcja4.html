@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Metadata Analyzer — Etap 2, Sekcja 4</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d1117; color: #c9d1d9; font: 15px/1.6 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 40px 28px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; color: #f0f6fc; }
+  h2 { font-size: 18px; margin: 36px 0 12px; color: #f0f6fc; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  .lead { color: #8b949e; margin: 0 0 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .card { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; }
+  .card .k { color: #8b949e; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .card .v { font-size: 22px; color: #f0f6fc; font-weight: 600; margin-top: 4px; }
+  .ok { color: #3fb950; }
+  code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px; }
+  code { background: #1f242c; padding: 1px 6px; border-radius: 5px; color: #e6edf3; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #21262d; vertical-align: top; }
+  th { color: #8b949e; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  ul { margin: 8px 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  pre { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; overflow-x: auto; color: #d2a8ff; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #1f6feb22; color: #58a6ff; border: 1px solid #1f6feb55; }
+  .muted { color: #8b949e; }
+</style>
+</head>
+<body>
+<main>
+  <span class="tag">Etap 2 · Sekcja 4</span>
+  <h1>Warstwa usługowa — analiza, zapis i odczyt w jednym miejscu</h1>
+  <p class="lead">Cały proces (analiza pliku → zapis do repozytorium → odczyt → ponowna analiza z aktualizacją) jest realizowany przez <code>IMetadataService</code>. WPF i CLI nie wiedzą, jaki provider i jakie repozytorium stoją pod spodem.</p>
+
+  <div class="grid">
+    <div class="card"><div class="k">Build</div><div class="v ok">0 błędów / 0 ostrzeżeń</div></div>
+    <div class="card"><div class="k">Testy</div><div class="v ok">141 / 141 zielonych</div></div>
+    <div class="card"><div class="k">Nowe testy</div><div class="v">17</div></div>
+    <div class="card"><div class="k">Kody błędów</div><div class="v">8</div></div>
+  </div>
+
+  <h2>1. Kontrakt <code>IMetadataService</code></h2>
+  <table>
+    <tr><th>Operacja</th><th>Znaczenie</th></tr>
+    <tr><td><code>AnalyzeAsync()</code></td><td>Analiza źródła domyślnego (dane symulowane) — zgodność z Etapem 1.</td></tr>
+    <tr><td><code>AnalyzeAsync(MetadataSource)</code></td><td>Analiza wskazanego pliku <code>.dll</code>/<code>.exe</code> przez providera refleksji.</td></tr>
+    <tr><td><code>AnalyzeAndSaveAsync(MetadataSource)</code></td><td>Pełny proces w jednym wywołaniu: analiza + zapis do repozytorium.</td></tr>
+    <tr><td><code>SaveAsync(AssemblyModel)</code></td><td>Zapis wyników; istniejąca analiza tego samego assembly jest aktualizowana.</td></tr>
+    <tr><td><code>LoadAsync(string)</code></td><td>Odczyt zapisanej analizy po nazwie; brak wpisu → <code>null</code> + ostrzeżenie w logu.</td></tr>
+    <tr><td><code>LoadLatestAsync()</code></td><td>Odczyt najnowszej analizy z repozytorium.</td></tr>
+    <tr><td><code>RefreshAsync()</code> / <code>RefreshAsync(MetadataSource)</code></td><td>Ponowna analiza ostatnio użytego źródła i zapis wyniku.</td></tr>
+    <tr><td><code>ListAsync()</code></td><td>Lista nazw assembly zapisanych w repozytorium.</td></tr>
+    <tr><td><code>DeleteAsync(string)</code></td><td>Usunięcie analizy; czyści <code>Current</code>, gdy usunięto aktualnie wczytaną.</td></tr>
+    <tr><td><code>Current</code>, <code>Source</code></td><td>Aktualny model i źródło, z którego powstał (potrzebne do odświeżenia).</td></tr>
+  </table>
+
+  <h2>2. Spójny model błędów</h2>
+  <p class="muted">Każdy błąd wychodzący z warstwy usługowej to <code>MetadataServiceException</code> z kodem, nazwą assembly, ścieżką pliku i zachowanym wyjątkiem wewnętrznym. Anulowanie pozostaje <code>OperationCanceledException</code>.</p>
+  <table>
+    <tr><th>Kod</th><th>Kiedy</th></tr>
+    <tr><td><code>SourceNotFound</code></td><td><code>FileNotFoundException</code>, <code>DirectoryNotFoundException</code></td></tr>
+    <tr><td><code>InvalidAssembly</code></td><td><code>InvalidDataException</code> i inne błędy providera (uszkodzony obraz)</td></tr>
+    <tr><td><code>AccessDenied</code></td><td><code>UnauthorizedAccessException</code></td></tr>
+    <tr><td><code>RepositoryCorrupted</code></td><td><code>RepositoryDocumentException</code> — uszkodzony/obcy dokument XML</td></tr>
+    <tr><td><code>RepositoryUnavailable</code></td><td><code>IOException</code> i pozostałe błędy we/wy repozytorium</td></tr>
+    <tr><td><code>InvalidSource</code> / <code>Unknown</code> / <code>Cancelled</code></td><td>Wartości rezerwowe kontraktu</td></tr>
+  </table>
+
+  <h2>3. Odporność i współbieżność</h2>
+  <ul>
+    <li><code>SemaphoreSlim</code> serializuje operacje analizy — równoległe wywołania nie nadpiszą <code>Current</code> w niekontrolowany sposób.</li>
+    <li><code>CancellationToken</code> jest przekazywany do providera i repozytorium; anulowanie przerywa cały łańcuch i nie zapisuje częściowych danych.</li>
+    <li>Brak repozytorium → czytelny <code>InvalidOperationException</code> przy operacjach repozytoryjnych; analiza działa dalej.</li>
+    <li>Zdarzenia <code>MetadataUpdated</code> / <code>MetadataUnchanged</code> pokazują w logu, czy odświeżenie zmieniło wynik.</li>
+  </ul>
+
+  <h2>4. Dependency Injection</h2>
+  <pre>services.AddMetadataAnalyzerCore(
+    useMockData, assemblyPath, reflectionOptions, repositoryOptions);
+
+IMetadataProvider     → MetadataProviderResolver → { MockMetadataProvider | ReflectionMetadataProvider }
+IMetadataRepository   → XmlMetadataRepository  (InMemoryMetadataRepository podmienialny w testach)
+IMetadataService      → MetadataService</pre>
+  <p class="muted">Usługa przyjmuje wyłącznie interfejsy — podmiana providera lub repozytorium nie wymaga zmiany logiki ani UI. Test <code>ServiceWorksWithAnyRepositoryImplementation</code> potwierdza to na <code>InMemoryMetadataRepository</code>.</p>
+
+  <h2>5. Zmiany w CLI (minimalne)</h2>
+  <ul>
+    <li>Nowa pozycja menu <code>[8] Refresh analysis and save</code> — ponowna analiza ostatniego pliku i aktualizacja wpisu w repozytorium; bez wcześniejszej analizy pliku wyświetla czytelne ostrzeżenie.</li>
+    <li>Pozostałe opcje (<code>5</code>, <code>6</code>, <code>7</code>) korzystają z rozszerzonego kontraktu bez zmian w prezentacji.</li>
+    <li>WPF bez zmian — korzysta z tych samych metod usługi.</li>
+  </ul>
+
+  <h2>6. Weryfikacja</h2>
+  <pre>dotnet build MetadataAnalyzer.slnx    → 0 błędów, 0 ostrzeżeń
+dotnet test  MetadataAnalyzer.Tests  → 141/141 (17 nowych testów integracyjnych)
+
+CLI:
+[5] Analyze assembly file              → Assembly analyzed: SampleAssembly 1.0.0.0
+[8] Refresh analysis and save          → Analysis refreshed: SampleAssembly 1.0.0.0
+[7] Load analysis from repository      → Analysis loaded: SampleAssembly 1.0.0.0
+[8] przed analizą pliku                → Refresh requires an assembly analyzed from a file.</pre>
+  <p class="muted">Testy pokrywają: analizę i zapis w jednym wywołaniu, zapamiętanie źródła, odświeżenie z podmianą wersji w repozytorium, logi „updated”/„unchanged”, odczyt po nazwie i najnowszy, brak wpisu, usuwanie i czyszczenie stanu, aktualizację istniejącej analizy, tłumaczenie błędów (brak pliku, uszkodzony assembly, uszkodzony XML, brak dostępu, błąd listy), anulowanie bez zapisu oraz działanie z dowolną implementacją repozytorium.</p>
+</main>
+</body>
+</html>

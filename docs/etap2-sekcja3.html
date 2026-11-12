@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Metadata Analyzer — Etap 2, Sekcja 3</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d1117; color: #c9d1d9; font: 15px/1.6 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 40px 28px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; color: #f0f6fc; }
+  h2 { font-size: 18px; margin: 36px 0 12px; color: #f0f6fc; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  .lead { color: #8b949e; margin: 0 0 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .card { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; }
+  .card .k { color: #8b949e; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .card .v { font-size: 22px; color: #f0f6fc; font-weight: 600; margin-top: 4px; }
+  .ok { color: #3fb950; }
+  code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px; }
+  code { background: #1f242c; padding: 1px 6px; border-radius: 5px; color: #e6edf3; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #21262d; vertical-align: top; }
+  th { color: #8b949e; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  ul { margin: 8px 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  pre { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; overflow-x: auto; color: #d2a8ff; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #1f6feb22; color: #58a6ff; border: 1px solid #1f6feb55; }
+  .muted { color: #8b949e; }
+</style>
+</head>
+<body>
+<main>
+  <span class="tag">Etap 2 · Sekcja 3</span>
+  <h1>Repozytorium XML — podsumowanie wdrożenia</h1>
+  <p class="lead">Wyniki analizy są zapisywane jako czytelne dokumenty XML (UTF-8) w konfigurowalnym katalogu i odczytywane z powrotem do tych samych modeli Core. Zapis jest atomowy — plik nigdy nie pozostaje niekompletny.</p>
+
+  <div class="grid">
+    <div class="card"><div class="k">Build</div><div class="v ok">0 błędów / 0 ostrzeżeń</div></div>
+    <div class="card"><div class="k">Testy</div><div class="v ok">124 / 124 zielonych</div></div>
+    <div class="card"><div class="k">Nowe pliki</div><div class="v">5</div></div>
+    <div class="card"><div class="k">Nowe testy</div><div class="v">18</div></div>
+  </div>
+
+  <h2>1. Nowe komponenty w Core</h2>
+  <table>
+    <tr><th>Plik</th><th>Rola</th></tr>
+    <tr><td><code>XmlMetadataRepository</code></td><td>Implementacja <code>IMetadataRepository</code>: zapis, odczyt, aktualizacja, lista, usuwanie, najnowsza analiza.</td></tr>
+    <tr><td><code>RepositoryDocument</code></td><td>Kontrakt struktury XML (atrybuty i elementy) odwzorowany 1:1 na modele Core.</td></tr>
+    <tr><td><code>RepositoryDocumentMapper</code></td><td>Mapowanie model ↔ dokument w obu kierunkach, bez duplikowania logiki.</td></tr>
+    <tr><td><code>RepositoryDocumentSerializer</code></td><td>Serializacja <code>XmlSerializer</code> z ustawieniami UTF-8, asynchroniczny odczyt, kontrolowana obsługa błędów.</td></tr>
+    <tr><td><code>RepositoryDocumentException</code></td><td>Jeden typ błędu repozytorium z zachowanym wyjątkiem wewnętrznym.</td></tr>
+  </table>
+
+  <h2>2. Struktura dokumentu</h2>
+  <pre>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;metadataAnalysis schemaVersion="1.0" savedAt="2026-11-12T07:32:11.2457699+00:00"&gt;
+  &lt;Assembly name="SampleLibrary" version="1.0.0.0" culture="neutral"
+            fileName="SampleLibrary.dll" location="Memory"
+            loadedAt="2026-11-12T08:32:11.2371569+01:00" runtimeVersion="sample"&gt;
+    &lt;namespaces&gt;
+      &lt;namespace name="SampleLibrary.Core"&gt;
+        &lt;types&gt;
+          &lt;type name="UserService" fullName="SampleLibrary.Core.UserService" kind="Class"
+                visibility="Public" baseType="object" isStatic="false" ...&gt;
+            &lt;genericParameters /&gt;
+            &lt;interfaces&gt;&lt;interface&gt;IUserService&lt;/interface&gt;&lt;/interfaces&gt;
+            &lt;fields&gt;&lt;field name="_repository" type="IUserRepository" visibility="Private" /&gt;&lt;/fields&gt;
+            &lt;properties&gt;&lt;property name="Count" type="int" canRead="true" /&gt;&lt;/properties&gt;
+            &lt;constructors&gt;&lt;constructor&gt;&lt;parameters&gt;...&lt;/parameters&gt;&lt;/constructor&gt;&lt;/constructors&gt;
+            &lt;methods&gt;&lt;method name="GetUser" returnType="User"&gt;&lt;parameters&gt;...&lt;/parameters&gt;&lt;/method&gt;&lt;/methods&gt;
+          &lt;/type&gt;</pre>
+  <p class="muted">Czasy zapisywane są w formacie <code>O</code> (ISO 8601) i zawsze w kulturze niezmiennej — odczyt odtwarza dokładnie ten sam moment w czasie.</p>
+
+  <h2>3. Wymagania sekcji</h2>
+  <table>
+    <tr><th>Wymaganie</th><th>Realizacja</th></tr>
+    <tr><td>Implementacja zgodna z <code>IMetadataRepository</code></td><td>Rejestrowana w DI jako <code>IMetadataRepository</code>; kontrakt bez zmian.</td></tr>
+    <tr><td>Zapis i odczyt <code>AssemblyModel</code></td><td>Pełne odwzorowanie: assembly, przestrzenie nazw, typy, pola, właściwości, konstruktory, metody, parametry, wartości enum, interfejsy, parametry generyczne.</td></tr>
+    <tr><td>Aktualizacja wcześniejszych analiz</td><td>Nazwa pliku wynika z nazwy assembly (<code>SampleLibrary.xml</code>) → zapis nadpisuje istniejący dokument, bez duplikatów; lista zwraca jedną pozycję.</td></tr>
+    <tr><td>Sprawdzanie istnienia repozytorium i plików</td><td><code>Exists</code>, brak katalogu → pusta lista, brak pliku → <code>null</code>.</td></tr>
+    <tr><td>Automatyczne tworzenie katalogu</td><td><code>CreateDirectory = true</code> (domyślnie); wyłączone → czytelny <code>RepositoryDocumentException</code>.</td></tr>
+    <tr><td>Zabezpieczenie przed niekompletnym plikiem</td><td>Zapis do pliku tymczasowego <code>*.tmp</code>, <code>FlushAsync</code>, a następnie atomowa podmiana <code>File.Move(overwrite)</code>; plik tymczasowy jest zawsze usuwany.</td></tr>
+    <tr><td>Uszkodzone i nieprawidłowe dokumenty</td><td>Niepoprawny XML / obcy element główny → <code>RepositoryDocumentException</code>; uszkodzone pliki są pomijane na liście.</td></tr>
+    <tr><td>Brak zduplikowanych danych</td><td>Jedno źródło prawdy (<code>RepositoryDocumentMapper</code>), brak kopiowania modeli „w locie”.</td></tr>
+    <tr><td>Lokalizacja konfigurowalna</td><td><code>Application:RepositoryPath</code> w <code>appsettings.json</code>, ścieżki względne rozwiązywane względem katalogu aplikacji, domyślnie <code>Repository</code>.</td></tr>
+    <tr><td>Operacje plikowe asynchroniczne</td><td><code>FileStream(useAsync)</code>, <code>ReadAllBytesAsync</code>, <code>FlushAsync</code>, <code>XmlWriter.FlushAsync</code>, <code>CancellationToken</code> w każdej operacji.</td></tr>
+    <tr><td>UTF-8</td><td>Brak BOM, deklaracja <code>encoding="utf-8"</code>.</td></tr>
+    <tr><td>Bezpieczeństwo odczytu</td><td><code>DtdProcessing.Prohibit</code>, <code>XmlResolver = null</code> — brak XXE.</td></tr>
+  </table>
+
+  <h2>4. Zmiany poza Core</h2>
+  <ul>
+    <li><code>AddMetadataAnalyzerCore(..., repositoryOptions)</code> — repozytorium XML jest domyślną implementacją; <code>InMemoryMetadataRepository</code> pozostaje w kodzie dla testów i użycia w pamięci.</li>
+    <li><code>ApplicationOptions.RepositoryPath</code> + <code>appsettings.json</code> (CLI i WPF): <code>"RepositoryPath": "Repository"</code>.</li>
+    <li><code>SettingsService.SaveAsync</code> zachowuje <code>RepositoryPath</code> przy zapisie ustawień.</li>
+    <li><code>ConstructorModel</code> i <code>MethodModel</code> porównują parametry po sygnaturze — model po odczycie z XML jest równy modelowi sprzed zapisu.</li>
+    <li>UI bez zmian: przyciski zapisu/odczytu w WPF i opcje <code>6</code>/<code>7</code> w CLI korzystają z tego samego kontraktu.</li>
+  </ul>
+
+  <h2>5. Weryfikacja</h2>
+  <pre>dotnet build MetadataAnalyzer.slnx   → 0 błędów, 0 ostrzeżeń
+dotnet test  MetadataAnalyzer.Tests → 124/124 (w tym 18 nowych)
+
+CLI: [6] Save analysis to repository  → SampleLibrary.xml
+CLI: [7] Load analysis from repository → Analysis loaded: SampleLibrary 1.0.0.0
+     Opcja 2 → pełne drzewo typów odtworzone z pliku</pre>
+  <p class="muted">Testy pokrywają: zapis UTF-8, tworzenie katalogu, brak katalogu przy wyłączonym tworzeniu, pełny round-trip modelu, nadpisanie bez duplikatów, zachowanie poprzedniego pliku przy błędzie zapisu i brak plików tymczasowych, uszkodzony XML, obcy dokument, filtrowanie listy, brak katalogu, wybór najnowszej analizy, usuwanie, sanityzację nazwy assembly, anulowanie, domyślną lokalizację, rozwiązywanie ścieżek względnych oraz niezmienniczość kultury przy datach.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Metadata Analyzer — Etap 2, Sekcja 5</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d1117; color: #c9d1d9; font: 15px/1.6 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 40px 28px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; color: #f0f6fc; }
+  h2 { font-size: 18px; margin: 36px 0 12px; color: #f0f6fc; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  .lead { color: #8b949e; margin: 0 0 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .card { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; }
+  .card .k { color: #8b949e; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .card .v { font-size: 22px; color: #f0f6fc; font-weight: 600; margin-top: 4px; }
+  .ok { color: #3fb950; }
+  code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px; }
+  code { background: #1f242c; padding: 1px 6px; border-radius: 5px; color: #e6edf3; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #21262d; vertical-align: top; }
+  th { color: #8b949e; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  ul { margin: 8px 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  pre { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 14px 16px; overflow-x: auto; color: #d2a8ff; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #1f6feb22; color: #58a6ff; border: 1px solid #1f6feb55; }
+  .muted { color: #8b949e; }
+</style>
+</head>
+<body>
+<main>
+  <span class="tag">Etap 2 · Sekcja 5</span>
+  <h1>Asynchroniczność, logowanie i obsługa błędów</h1>
+  <p class="lead">Długie operacje nie blokują wątku UI, anulowanie jest odrębną ścieżką (nie błędem), a każdy nieoczekiwany wyjątek trafia do logu razem z łańcuchem przyczyn i czytelnym komunikatem dla użytkownika.</p>
+
+  <div class="grid">
+    <div class="card"><div class="k">Build</div><div class="v ok">0 błędów / 0 ostrzeżeń</div></div>
+    <div class="card"><div class="k">Testy</div><div class="v ok">162 / 162 zielonych</div></div>
+    <div class="card"><div class="k">Nowe testy</div><div class="v">21</div></div>
+    <div class="card"><div class="k">Obsłużone przypadki</div><div class="v">10 / 10</div></div>
+  </div>
+
+  <h2>1. Asynchroniczność</h2>
+  <ul>
+    <li>Operacje plikowe korzystają z asynchronicznego I/O: <code>File.ReadAllBytesAsync</code>, <code>FileStream(useAsync: true)</code>, <code>FlushAsync</code>, <code>XmlWriter.FlushAsync</code>.</li>
+    <li>Refleksja (<code>MetadataLoadContext</code>) nie ma API asynchronicznego, więc tylko ona biegnie w <code>Task.Run</code> — reszta to prawdziwe <code>await</code> bez zbędnego owijania.</li>
+    <li>Listowanie repozytorium (blokujące <code>Directory.EnumerateFiles</code>) przeniesione na wątek roboczy, żeby nie blokować UI przy dużej liczbie plików.</li>
+    <li>WPF pozostaje w pełni responsywny: <code>await ... ConfigureAwait(true)</code> w <code>MainViewModel</code> wraca na wątek UI.</li>
+  </ul>
+
+  <h2>2. Anulowanie</h2>
+  <ul>
+    <li><code>CancellationToken</code> jest przekazywany przez usługę, providera i repozytorium; sprawdzanie następuje także <em>przed</em> wejściem do sekcji krytycznej.</li>
+    <li>Anulowanie to <code>OperationCanceledException</code> — nigdy <code>MetadataServiceException</code>; nie trafia do logu błędów, tylko jako ostrzeżenie <code>Metadata analysis cancelled</code>.</li>
+    <li>Przerwany zapis nie zostawia pliku tymczasowego ani częściowych danych.</li>
+  </ul>
+
+  <h2>3. Logowanie zdarzeń</h2>
+  <table>
+    <tr><th>Zdarzenie</th><th>Kiedy</th></tr>
+    <tr><td><code>Metadata analysis started</code> / <code>Metadata refresh started</code></td><td>Start analizy</td></tr>
+    <tr><td><code>Metadata analysis completed</code></td><td>Czas, liczba przestrzeni nazw, typów i składowych</td></tr>
+    <tr><td><code>Metadata analysis failed</code></td><td>Błąd ładowania assembly (typ wyjątku, komunikat, przyczyna)</td></tr>
+    <tr><td><code>Metadata save started</code> / <code>Metadata saved</code></td><td>Zapis w usłudze i potwierdzenie ścieżki pliku z repozytorium</td></tr>
+    <tr><td><code>Metadata load started</code> / <code>Metadata loaded</code></td><td>Odczyt analizy z repozytorium</td></tr>
+    <tr><td><code>Metadata XML write failed</code> / <code>Metadata XML read failed</code></td><td>Błędy serializacji, deserializacji i we/wy XML</td></tr>
+    <tr><td><code>Metadata repository unavailable</code></td><td>Brak dostępu do katalogu repozytorium</td></tr>
+  </table>
+  <pre>[2026-11-12 09:05:37] INFO  Metadata analysis completed: SampleAssembly in 109 ms, 1 namespaces, 8 types, 37 members
+[2026-11-12 09:05:37] INFO  Metadata save started: SampleAssembly (xml)
+[2026-11-12 09:05:37] INFO  Metadata saved (…\Repository\SampleAssembly.xml)
+[2026-11-12 09:05:37] INFO  Metadata load started: SampleAssembly (xml)
+[2026-11-12 09:05:37] INFO  Metadata loaded (…\Repository\SampleAssembly.xml)</pre>
+
+  <h2>4. Obsługa błędów</h2>
+  <table>
+    <tr><th>Przypadek</th><th>Kod</th><th>Komunikat dla użytkownika</th></tr>
+    <tr><td>Nieistniejący plik</td><td><code>SourceNotFound</code></td><td>The file was not found: …</td></tr>
+    <tr><td>Nieprawidłowa ścieżka</td><td><code>InvalidSource</code></td><td>Choose an assembly file to analyse.</td></tr>
+    <tr><td>Brak uprawnień do odczytu</td><td><code>AccessDenied</code></td><td>Access to … was denied.</td></tr>
+    <tr><td>Nieobsługiwany format</td><td><code>InvalidAssembly</code></td><td>… is not a valid .NET assembly.</td></tr>
+    <tr><td>Uszkodzone assembly</td><td><code>InvalidAssembly</code></td><td>… is not a valid .NET assembly.</td></tr>
+    <tr><td>Brak zależności</td><td><code>MissingDependency</code></td><td>… references assemblies that are not available.</td></tr>
+    <tr><td>Nieprawidłowy dokument XML</td><td><code>RepositoryCorrupted</code></td><td>The saved analysis of … is damaged and cannot be read.</td></tr>
+    <tr><td>Brak uprawnień do zapisu</td><td><code>AccessDenied</code></td><td>Access to … was denied.</td></tr>
+    <tr><td>Anulowanie analizy</td><td>—</td><td>Operation cancelled (nie błąd)</td></tr>
+    <tr><td>Nieoczekiwany wyjątek</td><td><code>Unknown</code> / <code>InvalidAssembly</code></td><td>The operation failed. See the log for details.</td></tr>
+  </table>
+  <p class="muted">Komunikat techniczny trafia do logu wraz z łańcuchem <code>InnerException</code>; użytkownik widzi <code>UserMessage</code>. Przyczyna nigdy nie jest ukrywana — <code>InnerException</code> jest zachowany na każdym poziomie.</p>
+
+  <h2>5. Rozbudowa loggera</h2>
+  <ul>
+    <li><code>IAppLogger.LogErrorAsync(string, Exception)</code> — domyślna implementacja w interfejsie, więc istniejące implementacje nadal się kompilują.</li>
+    <li><code>FileLogger</code> zapisuje cały łańcuch wyjątków (typ, komunikat, przyczyna) w jednym wpisie; opcja <code>IncludeExceptionDetails</code> pozwala go wyłączyć.</li>
+    <li><code>SettingsAwareLogger</code> przekazuje szczegóły dalej, zachowując filtrowanie poziomów i bufor podglądu logów.</li>
+    <li><code>XmlMetadataRepository</code> przyjmuje opcjonalny <code>IAppLogger</code> — loguje ścieżki zapisu/odczytu oraz błędy XML, nie wiedząc nic o warstwie prezentacji.</li>
+    <li>Jedna rejestracja <code>FileLogger</code> w DI (konkret + interfejs wskazują tę samą instancję).</li>
+  </ul>
+
+  <h2>6. Weryfikacja</h2>
+  <pre>dotnet build MetadataAnalyzer.slnx    → 0 błędów, 0 ostrzeżeń
+dotnet test  MetadataAnalyzer.Tests  → 162/162
+
+Nowe testy: 14 × obsługa błędów usługi, 3 × provider refleksji (zła ścieżka, plik niebędący
+assembly, plik zablokowany), 2 × FileLogger (łańcuch wyjątków, wyłączone szczegóły),
+2 × logowanie zdarzeń repozytorium i liczników analizy.</pre>
+  <p class="muted">Sprawdzone zachowania: brak pliku, zła ścieżka, zbyt długa ścieżka, brak uprawnień, zły format, uszkodzone assembly, brak zależności, uszkodzony XML, brak uprawnień do zapisu, anulowanie przed i w trakcie analizy, nieoczekiwany wyjątek z zachowanym <code>InnerException</code>, kompletność logów start/koniec/liczniki oraz brak pustych komunikatów użytkownika dla wszystkich kodów błędów.</p>
+</main>
+</body>
+</html>
