@@ -4,4 +4,5 @@
   <Project Path="MetadataAnalyzer.Infrastructure/MetadataAnalyzer.Infrastructure.csproj" />
   <Project Path="MetadataAnalyzer.Tests/MetadataAnalyzer.Tests.csproj" />
   <Project Path="MetadataAnalyzer.WPF/MetadataAnalyzer.WPF.csproj" />
+  <Project Path="MetadataAnalyzer.Tests/Fixtures/SampleAssembly/SampleAssembly.csproj" />
 </Solution>

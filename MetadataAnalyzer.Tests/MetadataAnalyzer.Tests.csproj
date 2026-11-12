@@ -25,4 +25,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Fixtures/**/*.cs" />
+    <None Include="Fixtures\SampleAssembly\bin\$(Configuration)\net10.0\SampleAssembly.dll" Link="SampleAssembly.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+
+
 </Project>

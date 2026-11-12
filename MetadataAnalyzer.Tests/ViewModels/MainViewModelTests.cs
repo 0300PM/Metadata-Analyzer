@@ -37,7 +37,7 @@ public sealed class MainViewModelTests
         Assert.True(viewModel.HasMetadata);
         Assert.NotNull(viewModel.Assembly);
         Assert.Equal(3, viewModel.Assembly!.NamespaceCount);
-        Assert.Equal(7, viewModel.Assembly.ClassCount);
+        Assert.Equal(8, viewModel.Assembly.ClassCount);
 
         var root = Assert.Single(viewModel.Assembly.Nodes);
         Assert.Equal(TreeNodeKind.Assembly, root.Kind);

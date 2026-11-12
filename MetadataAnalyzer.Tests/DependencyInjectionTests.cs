@@ -88,13 +88,33 @@ public sealed class DependencyInjectionTests
     }
 
     [Fact]
-    public async Task ResolverRejectsReflectionMode()
+    public async Task ResolverRequiresPathForReflectionMode()
     {
         using var provider = BuildProvider();
         var resolver = new MetadataProviderResolver(
             provider,
             new MetadataProviderOptions { UseMockData = false });
 
-        await Assert.ThrowsAsync<NotSupportedException>(() => resolver.LoadAsync());
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => resolver.LoadAsync());
+
+        Assert.Contains("assembly file path", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task RepositoryIsRegisteredAndRoundTripsAssembly()
+    {
+        using var provider = BuildProvider();
+        var repository = provider.GetRequiredService<IMetadataRepository>();
+        var assembly = await provider.GetRequiredService<IMetadataProvider>().LoadAsync();
+
+        await repository.SaveAsync(assembly);
+
+        Assert.Same(repository, provider.GetRequiredService<IMetadataRepository>());
+        Assert.Same(assembly, await repository.LoadAsync(assembly.Name));
+        Assert.Same(assembly, await repository.LoadLatestAsync());
+        Assert.Equal([assembly.Name], await repository.ListAsync());
+        Assert.True(await repository.DeleteAsync(assembly.Name));
+        Assert.False(await repository.DeleteAsync(assembly.Name));
+        Assert.Empty(await repository.ListAsync());
     }
 }

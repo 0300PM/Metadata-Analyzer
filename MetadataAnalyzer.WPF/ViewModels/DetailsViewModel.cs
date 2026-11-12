@@ -113,11 +113,25 @@ public sealed class DetailsViewModel
             new("Abstract", FormatBoolean(type.IsAbstract), "Abstract modifier"),
             new("Static", FormatBoolean(type.IsStatic), "Static modifier"),
             new("Members", Describe(type.MemberCount), "Total member count"),
+            new("Interfaces", type.ImplementsInterfaces ? Describe(type.Interfaces.Count) : "(none)", "Implemented interfaces"),
         };
 
         if (type.BaseType is not null)
         {
             properties.Add(new DetailsItem("Base Type", type.BaseType, "Inherited type"));
+        }
+
+        if (type.GenericParameters.Count > 0)
+        {
+            properties.Add(new DetailsItem(
+                "Generic Parameters",
+                string.Join(", ", type.GenericParameters),
+                "Generic type parameters"));
+        }
+
+        if (type.IsNested)
+        {
+            properties.Add(new DetailsItem("Declaring Type", type.DeclaringTypeName ?? "(unknown)", "Enclosing type"));
         }
 
         var sections = new List<DetailsSection>();
@@ -128,6 +142,15 @@ public sealed class DetailsViewModel
                 "Values",
                 type.EnumMembers
                     .Select(member => new DetailsItem(member.Name, member.Value ?? "?", "Enum value"))
+                    .ToList()));
+        }
+
+        if (type.ImplementsInterfaces)
+        {
+            sections.Add(new DetailsSection(
+                "Interfaces",
+                type.Interfaces
+                    .Select(name => new DetailsItem(name, "interface", "Implemented interface"))
                     .ToList()));
         }
 
@@ -307,6 +330,7 @@ public sealed class DetailsViewModel
         TypeKind.Interface => "Interface",
         TypeKind.Enum => "Enum",
         TypeKind.Struct => "Struct",
+        TypeKind.Delegate => "Delegate",
         _ => "Class",
     };
 

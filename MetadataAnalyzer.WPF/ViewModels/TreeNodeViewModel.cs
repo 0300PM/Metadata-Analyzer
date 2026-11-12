@@ -88,7 +88,7 @@ public sealed class TreeNodeViewModel : ObservableObject
             DetailsViewModel.FromAssembly(assembly),
         TreeNodeKind.Namespace when Model is NamespaceModel @namespace =>
             DetailsViewModel.FromNamespace(@namespace),
-        TreeNodeKind.Class or TreeNodeKind.Interface or TreeNodeKind.Enum or TreeNodeKind.Struct
+        TreeNodeKind.Class or TreeNodeKind.Interface or TreeNodeKind.Enum or TreeNodeKind.Struct or TreeNodeKind.Delegate
             when Model is ClassModel type => DetailsViewModel.FromClass(type),
         TreeNodeKind.Method when Model is MethodModel method && OwnerClass is not null =>
             DetailsViewModel.FromMethod(OwnerClass, method),
@@ -140,7 +140,7 @@ public sealed class TreeNodeViewModel : ObservableObject
 
     private static TreeNodeViewModel FromType(ClassModel type)
     {
-        var node = new TreeNodeViewModel(type.Name, DescribeKind(type.TypeKind), MapKind(type.TypeKind), type);
+        var node = new TreeNodeViewModel(type.Name, DescribeTypeCaption(type), MapKind(type.TypeKind), type);
 
         foreach (var enumMember in type.EnumMembers)
         {
@@ -213,14 +213,21 @@ public sealed class TreeNodeViewModel : ObservableObject
         TypeKind.Interface => TreeNodeKind.Interface,
         TypeKind.Enum => TreeNodeKind.Enum,
         TypeKind.Struct => TreeNodeKind.Struct,
+        TypeKind.Delegate => TreeNodeKind.Delegate,
         _ => TreeNodeKind.Class,
     };
+
+    private static string DescribeTypeCaption(ClassModel type) =>
+        type.BaseType is null
+            ? DescribeKind(type.TypeKind)
+            : $"{DescribeKind(type.TypeKind)} : {type.BaseType}";
 
     private static string DescribeKind(TypeKind kind) => kind switch
     {
         TypeKind.Interface => "Interface",
         TypeKind.Enum => "Enum",
         TypeKind.Struct => "Struct",
+        TypeKind.Delegate => "Delegate",
         _ => "Class",
     };
 }

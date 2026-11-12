@@ -8,6 +8,7 @@ public enum TreeNodeKind
     Interface,
     Enum,
     Struct,
+    Delegate,
     Method,
     Property,
     Field,
