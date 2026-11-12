@@ -29,6 +29,8 @@
                 <MenuItem Header="_Open Assembly..." InputGestureText="Ctrl+O" Command="{Binding OpenAssemblyCommand}" />
                 <MenuItem Header="_Close Assembly" Command="{Binding CloseAssemblyCommand}" />
                 <Separator />
+                <MenuItem Header="Load _Sample Assembly" Command="{Binding LoadSampleCommand}" />
+                <Separator />
                 <MenuItem Header="E_xit" InputGestureText="Alt+F4"
                           Click="OnExitClick" />
             </MenuItem>
@@ -65,7 +67,7 @@
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <Button Style="{StaticResource PrimaryButtonStyle}"
                             Command="{Binding OpenAssemblyCommand}"
-                            ToolTip="Open assembly (load sample data)"
+                            ToolTip="Open an assembly file"
                             AutomationProperties.AutomationId="OpenAssembly">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Open" />
@@ -172,7 +174,34 @@
                         </Grid>
                     </Border>
 
-                    <controls:AssemblyTreeView Grid.Row="1" Margin="4,4,2,4" SelectedNode="{Binding SelectedNode}" />
+                    <Grid Grid.Row="1" Margin="4,4,2,4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="2,0,2,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox Grid.Column="0"
+                                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource InputTextBoxStyle}"
+                                     AutomationProperties.AutomationId="TreeSearch"
+                                     ToolTip="Filter the tree by name" />
+                            <Button Grid.Column="1"
+                                    Margin="4,0,0,0"
+                                    Style="{StaticResource ToolbarButtonStyle}"
+                                    Command="{Binding ClearSearchCommand}"
+                                    Content="Clear"
+                                    IsEnabled="{Binding HasSearch}"
+                                    AutomationProperties.AutomationId="TreeSearchClear" />
+                        </Grid>
+
+                        <controls:AssemblyTreeView Grid.Row="1" SelectedNode="{Binding SelectedNode}" />
+                    </Grid>
                 </Grid>
             </Border>
 

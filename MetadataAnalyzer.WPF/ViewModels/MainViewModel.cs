@@ -17,6 +17,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly ISystemClock _clock;
     private readonly InMemoryLogSink? _logSink;
     private readonly AppSettings _settings;
+    private Func<string?>? _pickAssemblyFile;
 
     [ObservableProperty]
     private AssemblyViewModel? _assembly;
@@ -38,6 +39,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private string? _errorMessage;
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
 
     public MainViewModel(
         IMetadataService metadataService,
@@ -74,6 +78,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     public bool CanUseTree => Assembly is not null && !IsBusy;
 
+    public bool HasSearch => !string.IsNullOrWhiteSpace(SearchText);
+
+    public int MatchCount => Assembly?.MatchCount ?? 0;
+
     public string Subtitle => Assembly?.Summary ?? "No assembly loaded";
 
     public string Counters => Assembly?.Counters ?? "0 namespaces · 0 types · 0 members";
@@ -85,8 +93,33 @@ public sealed partial class MainViewModel : ObservableObject
     public IReadOnlyList<LogEntry> LogEntries => _logSink?.Entries ?? [];
 
     [RelayCommand]
-    private async Task OpenAssemblyAsync(CancellationToken cancellationToken) =>
-        await LoadAsync(_metadataService.AnalyzeAsync, "Open", cancellationToken).ConfigureAwait(true);
+    private async Task OpenAssemblyAsync(CancellationToken cancellationToken)
+    {
+        var path = _pickAssemblyFile?.Invoke();
+
+        if (path is null)
+        {
+            StatusMessage = "Open cancelled.";
+            return;
+        }
+
+        await LoadAsync(
+                token => _metadataService.AnalyzeAsync(new MetadataSource(path), token),
+                "Open",
+                cancellationToken)
+            .ConfigureAwait(true);
+    }
+
+    [RelayCommand]
+    private async Task LoadSampleAsync(CancellationToken cancellationToken) =>
+        await LoadAsync(
+                token => _metadataService.AnalyzeAsync(MetadataSource.Empty, token),
+                "Load sample",
+                cancellationToken)
+            .ConfigureAwait(true);
+
+    [RelayCommand]
+    private void ClearSearch() => SearchText = string.Empty;
 
     [RelayCommand]
     private async Task RefreshAsync(CancellationToken cancellationToken) =>
@@ -138,6 +171,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void SelectNode(TreeNodeViewModel? node) => SelectedNode = node;
 
+    public void UseAssemblyPicker(Func<string?> pickAssemblyFile) =>
+        _pickAssemblyFile = pickAssemblyFile ?? throw new ArgumentNullException(nameof(pickAssemblyFile));
+
     /// <summary>
     /// Pokazuje błąd w pasku ostrzeżeń zamiast kończyć proces.
     /// </summary>
@@ -172,6 +208,23 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     partial void OnErrorMessageChanged(string? value) => OnPropertyChanged(nameof(HasError));
+
+    partial void OnSearchTextChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasSearch));
+
+        if (Assembly is null)
+        {
+            return;
+        }
+
+        Assembly.ApplyFilter(value);
+        OnPropertyChanged(nameof(MatchCount));
+
+        StatusMessage = HasSearch
+            ? $"{MatchCount} matching elements for \"{value.Trim()}\"."
+            : "Filter cleared.";
+    }
 
     partial void OnIsBusyChanged(bool value) => RaiseState();
 
@@ -212,6 +265,12 @@ public sealed partial class MainViewModel : ObservableObject
             SelectedNode = null;
             Details = DetailsViewModel.FromAssembly(model);
 
+            if (HasSearch)
+            {
+                Assembly.ApplyFilter(SearchText);
+                OnPropertyChanged(nameof(MatchCount));
+            }
+
             var elapsed = _clock.Now - startedAt;
             StatusMessage = $"Data loaded successfully. {operationName} completed in {elapsed.TotalMilliseconds:0} ms.";
         }
@@ -220,11 +279,17 @@ public sealed partial class MainViewModel : ObservableObject
             StatusMessage = $"{operationName} cancelled.";
             await _logger.LogWarningAsync($"{operationName} cancelled").ConfigureAwait(true);
         }
+        catch (MetadataServiceException exception)
+        {
+            ErrorMessage = $"{operationName} failed: {exception.UserMessage}";
+            StatusMessage = "An error occurred. See the log for details.";
+            await _logger.LogErrorAsync($"{operationName} failed: {exception.UserMessage}", exception).ConfigureAwait(true);
+        }
         catch (Exception exception)
         {
             ErrorMessage = $"{operationName} failed: {exception.Message}";
             StatusMessage = "An error occurred. See the log for details.";
-            await _logger.LogErrorAsync($"{operationName} failed: {exception.Message}").ConfigureAwait(true);
+            await _logger.LogErrorAsync($"{operationName} failed: {exception.Message}", exception).ConfigureAwait(true);
         }
         finally
         {
@@ -241,5 +306,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanUseTree));
         OnPropertyChanged(nameof(Subtitle));
         OnPropertyChanged(nameof(Counters));
+        OnPropertyChanged(nameof(HasSearch));
+        OnPropertyChanged(nameof(MatchCount));
     }
 }

@@ -67,7 +67,21 @@ public sealed class AssemblyViewModel : ObservableObject
             assembly.MemberCount);
     }
 
+    public int MatchCount { get; private set; }
+
     public void SetExpanded(bool expanded) => Root.SetExpandedRecursively(expanded);
+
+    public void ApplyFilter(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            MatchCount = 0;
+            Root.ClearFilter();
+            return;
+        }
+
+        MatchCount = Root.ApplyFilter(text.Trim(), expandMatches: false);
+    }
 
     private static string Describe(int value) => value.ToString(CultureInfo.InvariantCulture);
 }

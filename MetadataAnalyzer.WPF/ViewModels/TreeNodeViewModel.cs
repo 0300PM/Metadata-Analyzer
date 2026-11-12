@@ -8,6 +8,7 @@ public sealed class TreeNodeViewModel : ObservableObject
 {
     private bool _isExpanded;
     private bool _isSelected;
+    private bool _isVisible = true;
 
     private TreeNodeViewModel(
         string label,
@@ -64,6 +65,46 @@ public sealed class TreeNodeViewModel : ObservableObject
         get => _isSelected;
         set => SetProperty(ref _isSelected, value);
     }
+
+    public bool IsVisible
+    {
+        get => _isVisible;
+        set => SetProperty(ref _isVisible, value);
+    }
+
+    public int ApplyFilter(string text) => ApplyFilter(text, expandMatches: true);
+
+    public int ApplyFilter(string text, bool expandMatches)
+    {
+        var matched = Matches(text);
+        var descendantMatches = 0;
+
+        foreach (var child in Children)
+        {
+            descendantMatches += child.ApplyFilter(text, expandMatches);
+        }
+
+        IsVisible = matched || descendantMatches > 0;
+
+        if (expandMatches && IsVisible && Kind != TreeNodeKind.Assembly)
+        {
+            IsExpanded = descendantMatches > 0;
+        }
+
+        return (matched ? 1 : 0) + descendantMatches;
+    }
+
+    public void ClearFilter()
+    {
+        foreach (var node in Flatten())
+        {
+            node.IsVisible = true;
+        }
+    }
+
+    private bool Matches(string text) =>
+        Label.Contains(text, StringComparison.OrdinalIgnoreCase)
+        || Caption.Contains(text, StringComparison.OrdinalIgnoreCase);
 
     public static TreeNodeViewModel FromAssembly(AssemblyModel assembly)
     {
