@@ -14,7 +14,15 @@ public sealed record ClassModel(
     bool IsInterface = false,
     string? NamespaceName = null,
     TypeKind TypeKind = TypeKind.Class,
-    IReadOnlyList<EnumMemberModel>? EnumMembers = null)
+    IReadOnlyList<EnumMemberModel>? EnumMembers = null,
+    IReadOnlyList<string>? Interfaces = null,
+    bool IsSealed = false,
+    bool IsGeneric = false,
+    string? AssemblyName = null,
+    IReadOnlyList<string>? GenericParameters = null,
+    bool IsNested = false,
+    string? DeclaringTypeName = null,
+    bool IsFlagsEnum = false)
 {
     public IReadOnlyList<MethodModel> Methods { get; init; } = Methods ?? [];
 
@@ -26,6 +34,10 @@ public sealed record ClassModel(
 
     public IReadOnlyList<EnumMemberModel> EnumMembers { get; init; } = EnumMembers ?? [];
 
+    public IReadOnlyList<string> Interfaces { get; init; } = Interfaces ?? [];
+
+    public IReadOnlyList<string> GenericParameters { get; init; } = GenericParameters ?? [];
+
     public TypeKind TypeKind { get; init; } = IsInterface ? TypeKind.Interface : TypeKind;
 
     public string Namespace
@@ -35,11 +47,39 @@ public sealed record ClassModel(
         init => NamespaceName = value;
     }
 
-    public string DisplayName => TypeKind == TypeKind.Interface ? $"interface {Name}" : Name;
+    public string DisplayName => TypeKind switch
+    {
+        TypeKind.Interface => $"interface {Name}",
+        TypeKind.Struct => $"struct {Name}",
+        TypeKind.Enum => $"enum {Name}",
+        TypeKind.Delegate => $"delegate {Name}",
+        _ => Name,
+    };
+
+    public string KindLabel => TypeKind switch
+    {
+        TypeKind.Interface => "Interface",
+        TypeKind.Struct => "Struct",
+        TypeKind.Enum => "Enum",
+        TypeKind.Delegate => "Delegate",
+        _ => IsStatic ? "Static class" : "Class",
+    };
 
     public int MemberCount => Methods.Count + Properties.Count + Fields.Count + Constructors.Count + EnumMembers.Count;
 
     public bool HasMembers => MemberCount > 0;
+
+    public bool ImplementsInterfaces => Interfaces.Count > 0;
+
+    public string GenericSuffix => GenericParameters.Count == 0
+        ? string.Empty
+        : $"<{string.Join(", ", GenericParameters)}>";
+
+    public string QualifiedName => IsNested ? $"{DeclaringTypeName}+{Name}" : FullName;
+
+    public string TypeSummary => string.IsNullOrWhiteSpace(BaseType)
+        ? KindLabel
+        : $"{KindLabel} : {BaseType}";
 
     private static string DeriveNamespace(string fullName, string name)
     {

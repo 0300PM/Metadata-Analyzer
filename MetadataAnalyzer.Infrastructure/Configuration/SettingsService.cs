@@ -38,7 +38,7 @@ public static class SettingsService
             application.ShowDetailsPanel);
     }
 
-    public static async Task SaveAsync(AppSettings settings)
+    public static async Task SaveAsync(AppSettings settings, ApplicationOptions? configuration = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
 
@@ -49,6 +49,7 @@ public static class SettingsService
                 ["Name"] = ApplicationOptions.DefaultName,
                 ["Version"] = ApplicationOptions.DefaultVersion,
                 ["UseMockData"] = settings.UseMockData,
+                ["AssemblyPath"] = configuration?.AssemblyPath,
                 ["ShowDetailsPanel"] = settings.ShowDetailsPanel,
             },
             [LoggingOptions.SectionName] = new Dictionary<string, object?>

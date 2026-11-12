@@ -24,7 +24,7 @@ public sealed class MockMetadataProviderTests
         var assembly = await _provider.LoadAsync();
 
         Assert.Equal(3, assembly.NamespaceCount);
-        Assert.Equal(7, assembly.ClassCount);
+        Assert.Equal(8, assembly.ClassCount);
         Assert.Equal(
             ["SampleLibrary.Core", "SampleLibrary.Models", "SampleLibrary.Interface"],
             assembly.Namespaces.Select(@namespace => @namespace.Name));

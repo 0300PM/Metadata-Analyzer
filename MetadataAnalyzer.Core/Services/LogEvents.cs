@@ -8,6 +8,8 @@ public static class LogEvents
 
     public const string MetadataAnalysisStarted = "Metadata analysis started";
 
+    public const string MetadataRefreshStarted = "Metadata refresh started";
+
     public const string SampleDataLoaded = "Sample data loaded";
 
     public const string MetadataDisplayed = "Metadata displayed";
@@ -15,6 +17,16 @@ public static class LogEvents
     public const string DetailsDisplayed = "Details displayed";
 
     public const string MetadataAnalysisFailed = "Metadata analysis failed";
+
+    public const string MetadataAnalysisCancelled = "Metadata analysis cancelled";
+
+    public const string MetadataSaved = "Metadata saved";
+
+    public const string MetadataLoaded = "Metadata loaded";
+
+    public const string MetadataNotFound = "Metadata not found";
+
+    public const string MetadataRepositoryFailed = "Metadata repository operation failed";
 
     public const string InvalidSelection = "Invalid selection";
 }

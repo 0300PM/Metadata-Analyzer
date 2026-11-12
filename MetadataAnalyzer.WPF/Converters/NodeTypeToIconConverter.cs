@@ -15,6 +15,7 @@ public sealed class NodeTypeToIconConverter : IValueConverter
         [TreeNodeKind.Interface] = "pack://application:,,,/Resources/Icons/interface.svg",
         [TreeNodeKind.Struct] = "pack://application:,,,/Resources/Icons/struct.svg",
         [TreeNodeKind.Enum] = "pack://application:,,,/Resources/Icons/enum.svg",
+        [TreeNodeKind.Delegate] = "pack://application:,,,/Resources/Icons/delegate.svg",
         [TreeNodeKind.Method] = "pack://application:,,,/Resources/Icons/method.svg",
         [TreeNodeKind.Property] = "pack://application:,,,/Resources/Icons/property.svg",
         [TreeNodeKind.Field] = "pack://application:,,,/Resources/Icons/field.svg",

@@ -36,6 +36,7 @@ public sealed class MetadataFormatter : IMetadataFormatter
         AppendLine(builder, "Assembly:     {0}", assembly.Name);
         AppendLine(builder, "Version:      {0}", assembly.Version);
         AppendLine(builder, "File name:    {0}", Describe(assembly.FileName));
+        AppendLine(builder, "Location:     {0}", assembly.HasFile ? assembly.FilePath! : "(none)");
         AppendLine(builder, "Namespaces:   {0}", assembly.NamespaceCount);
         AppendLine(builder, "Classes:      {0}", assembly.ClassCount);
         AppendLine(builder, "Members:      {0}", assembly.MemberCount);
@@ -98,6 +99,7 @@ public sealed class MetadataFormatter : IMetadataFormatter
         if (method is not null)
         {
             AppendLine(builder, "Kind:         Method");
+            AppendLine(builder, "Modifier:     {0}", method.Modifier);
             AppendLine(builder, "Signature:    {0}", method.Signature);
             AppendLine(builder, "Return type:  {0}", method.ReturnType);
             AppendLine(builder, "Visibility:   {0}", method.Visibility);
@@ -110,6 +112,7 @@ public sealed class MetadataFormatter : IMetadataFormatter
         if (field is not null)
         {
             AppendLine(builder, "Kind:         Field");
+            AppendLine(builder, "Modifier:     {0}", field.Modifier);
             AppendLine(builder, "Type:         {0}", field.FieldType);
             AppendLine(builder, "Visibility:   {0}", field.Visibility);
             AppendLine(builder, "Static:       {0}", FormatBoolean(field.IsStatic));
@@ -213,6 +216,7 @@ public sealed class MetadataFormatter : IMetadataFormatter
         TypeKind.Interface => "Interface",
         TypeKind.Enum => "Enum",
         TypeKind.Struct => "Struct",
+        TypeKind.Delegate => "Delegate",
         _ => "Class",
     };
 

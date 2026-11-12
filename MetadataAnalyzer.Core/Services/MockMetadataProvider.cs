@@ -9,8 +9,12 @@ public sealed class MockMetadataProvider(ISystemClock? clock = null) : IMetadata
     public const string AssemblyVersion = "1.0.0.0";
     public const string AssemblyFileName = "SampleLibrary.dll";
 
-    public Task<AssemblyModel> LoadAsync(CancellationToken cancellationToken = default)
+    public Task<AssemblyModel> LoadAsync(CancellationToken cancellationToken = default) =>
+        LoadAsync(MetadataSource.Empty, cancellationToken);
+
+    public Task<AssemblyModel> LoadAsync(MetadataSource source, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(source);
         cancellationToken.ThrowIfCancellationRequested();
 
         var loadedAt = clock?.Now ?? DateTimeOffset.Now;
@@ -25,9 +29,11 @@ public sealed class MockMetadataProvider(ISystemClock? clock = null) : IMetadata
         [
             new NamespaceModel("SampleLibrary.Core", [UserService(), ProductService()]),
             new NamespaceModel("SampleLibrary.Models", [User(), Product()]),
-            new NamespaceModel("SampleLibrary.Interface", [IUserService(), Logger(), UserRole()]),
+            new NamespaceModel("SampleLibrary.Interface", [IUserService(), Logger(), UserRole(), UserFilter()]),
         ],
-        LoadedAt: loadedAt == default ? DateTimeOffset.Now : loadedAt);
+        LoadedAt: loadedAt == default ? DateTimeOffset.Now : loadedAt,
+        Location: AssemblyLocation.Memory,
+        RuntimeVersion: "sample");
 
     private static ClassModel UserService() => new(
         Name: "UserService",
@@ -47,15 +53,16 @@ public sealed class MockMetadataProvider(ISystemClock? clock = null) : IMetadata
             new MethodModel("GetUser", "User", Parameters: [new ParameterModel("id", "int")]),
             new MethodModel("CreateUser", "User", Parameters:
             [
-                new ParameterModel("name", "string"),
-                new ParameterModel("email", "string", IsOptional: true),
+                new ParameterModel("name", "string", Position: 0),
+                new ParameterModel("email", "string", IsOptional: true, Position: 1),
             ]),
             new MethodModel("DeleteUser", "bool", Parameters: [new ParameterModel("id", "int")]),
         ],
         Constructors:
         [
             new ConstructorModel(MemberVisibility.Public, [new ParameterModel("repository", "IUserRepository")]),
-        ]);
+        ],
+        Interfaces: ["IUserService"]);
 
     private static ClassModel ProductService() => new(
         Name: "ProductService",
@@ -138,9 +145,27 @@ public sealed class MockMetadataProvider(ISystemClock? clock = null) : IMetadata
         BaseType: "Enum",
         EnumMembers:
         [
-            new EnumMemberModel("Guest", "0"),
-            new EnumMemberModel("Member", "1"),
-            new EnumMemberModel("Administrator", "2"),
+            new EnumMemberModel("Guest", "0", 0),
+            new EnumMemberModel("Member", "1", 1),
+            new EnumMemberModel("Administrator", "2", 2),
         ],
         TypeKind: TypeKind.Enum);
+
+    private static ClassModel UserFilter() => new(
+        Name: "UserFilter",
+        FullName: "SampleLibrary.Interface.UserFilter",
+        BaseType: "MulticastDelegate",
+        Methods:
+        [
+            new MethodModel(
+                "Invoke",
+                "bool",
+                Parameters: [new ParameterModel("user", "User")]),
+        ],
+        Constructors:
+        [
+            new ConstructorModel(MemberVisibility.Public, [new ParameterModel("target", "object"), new ParameterModel("method", "IntPtr")]),
+        ],
+        TypeKind: TypeKind.Delegate,
+        IsSealed: true);
 }

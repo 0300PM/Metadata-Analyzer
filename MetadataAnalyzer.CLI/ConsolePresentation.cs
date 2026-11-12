@@ -17,6 +17,9 @@ public static class ConsolePresentation
         new("2", "Display assembly structure"),
         new("3", "Display assembly details"),
         new("4", "Display member details"),
+        new("5", "Analyze assembly file"),
+        new("6", "Save analysis to repository"),
+        new("7", "Load analysis from repository"),
         new("0", "Exit"),
     ];
 

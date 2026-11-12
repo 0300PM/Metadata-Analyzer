@@ -5,5 +5,6 @@ public enum TypeKind
     Class,
     Interface,
     Struct,
-    Enum
+    Enum,
+    Delegate
 }
