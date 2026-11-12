@@ -36,6 +36,13 @@ public sealed class FileLogger : IAppLogger, IDisposable
 
     public Task LogErrorAsync(string message) => WriteAsync("ERROR", message);
 
+    public Task LogErrorAsync(string message, Exception exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+
+        return WriteAsync("ERROR", _options.IncludeExceptionDetails ? Describe(message, exception) : message);
+    }
+
     private async Task WriteAsync(string level, string message)
     {
         if (!_options.Enabled)
@@ -99,6 +106,23 @@ public sealed class FileLogger : IAppLogger, IDisposable
     }
 
     public void Dispose() => _gate.Dispose();
+
+    private static string Describe(string message, Exception exception)
+    {
+        var builder = new StringBuilder(message);
+
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            builder
+                .Append(Environment.NewLine)
+                .Append("        ")
+                .Append(current.GetType().FullName)
+                .Append(": ")
+                .Append(current.Message);
+        }
+
+        return builder.ToString();
+    }
 
     private static string Format(string level, string message) =>
         $"[{DateTimeOffset.Now.ToString(TimestampFormat, CultureInfo.InvariantCulture)}] {level,-5} {message}";

@@ -13,4 +13,6 @@ public sealed class LoggingOptions
     public string MinimumLevel { get; set; } = "Information";
 
     public bool LogToConsole { get; set; } = true;
+
+    public bool IncludeExceptionDetails { get; set; } = true;
 }

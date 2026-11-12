@@ -222,6 +222,46 @@ public sealed class ReflectionMetadataProviderTests
     }
 
     [Fact]
+    public async Task LoadAsyncRejectsInvalidPath()
+    {
+        var invalid = "C:\\libs\\invalid\0path.dll";
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(
+            () => _provider.LoadAsync(new MetadataSource(invalid)));
+
+        Assert.Contains("not valid", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LoadAsyncRejectsNonAssemblyFile()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = directory.File("notes.dll");
+        await File.WriteAllTextAsync(path, "this is not an assembly");
+
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(
+            () => _provider.LoadAsync(new MetadataSource(path)));
+
+        Assert.Contains("not a valid .NET assembly", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LoadAsyncWrapsUnreadableFile()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = directory.File("locked.dll");
+        File.Copy(FixturePath, path);
+
+        await using var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(
+            () => _provider.LoadAsync(new MetadataSource(path)));
+
+        Assert.Contains("could not be read", exception.Message, StringComparison.Ordinal);
+        Assert.NotNull(exception.InnerException);
+    }
+
+    [Fact]
     public async Task LoadAsyncHandlesMissingDependencies()
     {
         using var directory = new TemporaryDirectory();
@@ -274,6 +314,22 @@ public sealed class ReflectionMetadataProviderTests
             new MetadataProviderOptions { UseMockData = true, FilePath = null });
 
         var assembly = await resolver.LoadAsync(new MetadataSource(FixturePath));
+
+        Assert.Equal("SampleAssembly", assembly.Name);
+    }
+
+    [Fact]
+    public async Task ResolverPrefersConfiguredFileOverMockData()
+    {
+        var services = new ServiceCollection();
+        services.AddMetadataAnalyzerCore(useMockData: true);
+        using var provider = services.BuildServiceProvider();
+
+        var resolver = new MetadataProviderResolver(
+            provider,
+            new MetadataProviderOptions { UseMockData = true, FilePath = FixturePath });
+
+        var assembly = await resolver.LoadAsync();
 
         Assert.Equal("SampleAssembly", assembly.Name);
     }

@@ -15,8 +15,8 @@ public static class ServiceCollectionExtensions
         configure?.Invoke(options);
 
         services.AddSingleton(options);
-        services.AddSingleton<IAppLogger>(_ => new FileLogger(options));
         services.AddSingleton<FileLogger>(_ => new FileLogger(options));
+        services.AddSingleton<IAppLogger>(provider => provider.GetRequiredService<FileLogger>());
 
         return services;
     }

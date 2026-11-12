@@ -16,5 +16,7 @@ public sealed class ApplicationOptions
 
     public string? AssemblyPath { get; set; }
 
+    public string? RepositoryPath { get; set; }
+
     public bool ShowDetailsPanel { get; set; } = true;
 }

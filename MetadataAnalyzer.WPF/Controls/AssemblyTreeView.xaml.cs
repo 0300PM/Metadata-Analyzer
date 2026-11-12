@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Windows;
 using System.Windows.Controls;
 using MetadataAnalyzer.WPF.ViewModels;
@@ -51,15 +50,8 @@ public partial class AssemblyTreeView : UserControl
         }
     }
 
-    private void OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
-    {
+    private void OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e) =>
         SelectedNode = e.NewValue as TreeNodeViewModel;
-        var label = DataContext is MainViewModel model ? model.SelectedNode?.Label ?? "null" : "n/a";
-        var detailsTitle = DataContext is MainViewModel viewModel ? viewModel.Details.Title : "n/a";
-        System.IO.File.AppendAllText(
-            System.IO.Path.Combine(System.IO.Path.GetTempPath(), "tree-diag.txt"),
-            "vm=" + label + " details=" + detailsTitle + Environment.NewLine);
-    }
 
     private static TreeViewItem? FindContainer(ItemsControl parent, TreeNodeViewModel node)
     {

@@ -58,6 +58,15 @@ public sealed class SettingsAwareLogger(LoggingOptions options, InMemoryLogSink 
 
     public Task LogErrorAsync(string message) => WriteAsync("Error", message, inner.LogErrorAsync);
 
+    public Task LogErrorAsync(string message, Exception exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+
+        return IsEnabled("Error")
+            ? WriteAsync("Error", $"{message}: {exception.GetType().Name}: {exception.Message}", _ => inner.LogErrorAsync(message, exception))
+            : Task.CompletedTask;
+    }
+
     private Task WriteAsync(string level, string message, Func<string, Task> write)
     {
         if (!IsEnabled(level))

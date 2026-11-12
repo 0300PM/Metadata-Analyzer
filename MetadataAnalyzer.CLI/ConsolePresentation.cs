@@ -20,6 +20,7 @@ public static class ConsolePresentation
         new("5", "Analyze assembly file"),
         new("6", "Save analysis to repository"),
         new("7", "Load analysis from repository"),
+        new("8", "Refresh analysis and save"),
         new("0", "Exit"),
     ];
 

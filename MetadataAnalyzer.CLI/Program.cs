@@ -34,7 +34,9 @@ public static class Program
 
         try
         {
-            return await app.RunAsync(cancellation.Token).ConfigureAwait(false);
+            var path = args.FirstOrDefault(argument => !argument.StartsWith('-'));
+
+            return await app.RunAsync(path, cancellation.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -45,7 +47,7 @@ public static class Program
         catch (Exception exception)
         {
             await provider.GetRequiredService<IAppLogger>()
-                .LogErrorAsync($"Unhandled CLI failure: {exception}")
+                .LogErrorAsync("Unhandled CLI failure", exception)
                 .ConfigureAwait(false);
 
             Console.Error.WriteLine($"Unhandled error: {exception.Message}");

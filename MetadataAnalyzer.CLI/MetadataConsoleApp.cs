@@ -15,13 +15,19 @@ public sealed class MetadataConsoleApp(
     private AssemblyModel? _assembly;
     private TimeSpan? _lastOperation;
 
-    public async Task<int> RunAsync(CancellationToken cancellationToken = default)
+    public async Task<int> RunAsync(string? assemblyPath = null, CancellationToken cancellationToken = default)
     {
         ConsolePresentation.WriteHeader("METADATA ANALYZER");
         await logger.LogInformationAsync(LogEvents.ApplicationStarted).ConfigureAwait(false);
 
         try
         {
+            if (!string.IsNullOrWhiteSpace(assemblyPath))
+            {
+                await AnalyzeAsync(assemblyPath.Trim(), cancellationToken).ConfigureAwait(false);
+                output.WriteLine();
+            }
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 ConsolePresentation.WriteMenu();
@@ -80,6 +86,9 @@ public sealed class MetadataConsoleApp(
             case "7":
                 await LoadFromRepositoryAsync(cancellationToken).ConfigureAwait(false);
                 break;
+            case "8":
+                await RefreshAsync(cancellationToken).ConfigureAwait(false);
+                break;
             default:
                 await HandleInvalidOptionAsync(choice).ConfigureAwait(false);
                 break;
@@ -124,8 +133,13 @@ public sealed class MetadataConsoleApp(
             return;
         }
 
+        await AnalyzeAsync(path.Trim(), cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task AnalyzeAsync(string path, CancellationToken cancellationToken)
+    {
         var startedAt = DateTimeOffset.UtcNow;
-        var source = new MetadataSource(path.Trim());
+        var source = new MetadataSource(path);
 
         try
         {
@@ -148,6 +162,40 @@ public sealed class MetadataConsoleApp(
                 .ConfigureAwait(false);
 
             ConsolePresentation.WriteError($"Analysis failed: {exception.Message}");
+        }
+    }
+
+    private async Task RefreshAsync(CancellationToken cancellationToken)
+    {
+        var source = metadataService.Source;
+
+        if (source.FilePath is null)
+        {
+            ConsolePresentation.WriteWarning("Refresh requires an assembly analyzed from a file.");
+            return;
+        }
+
+        var startedAt = DateTimeOffset.UtcNow;
+
+        try
+        {
+            _assembly = await metadataService.RefreshAsync(cancellationToken).ConfigureAwait(false);
+            _lastOperation = DateTimeOffset.UtcNow - startedAt;
+
+            ConsolePresentation.WriteSuccess($"Analysis refreshed: {_assembly.Name} {_assembly.Version}");
+            ConsolePresentation.WriteLabel("Location", _assembly.FilePath ?? "(none)");
+            ConsolePresentation.WriteLabel("Types", _assembly.ClassCount.ToString(CultureInfo.InvariantCulture));
+        }
+        catch (OperationCanceledException)
+        {
+            ConsolePresentation.WriteWarning("Refresh cancelled.");
+        }
+        catch (Exception exception)
+        {
+            await logger.LogErrorAsync($"{LogEvents.MetadataAnalysisFailed}: {exception.Message}")
+                .ConfigureAwait(false);
+
+            ConsolePresentation.WriteError($"Refresh failed: {exception.Message}");
         }
     }
 
@@ -184,9 +232,14 @@ public sealed class MetadataConsoleApp(
         {
             names = await metadataService.ListAsync(cancellationToken).ConfigureAwait(false);
         }
+        catch (OperationCanceledException)
+        {
+            ConsolePresentation.WriteWarning("Reading the repository cancelled.");
+            return;
+        }
         catch (Exception exception)
         {
-            ConsolePresentation.WriteError($"Reading the repository failed: {exception.Message}");
+            ConsolePresentation.WriteError($"Reading the repository failed: {Describe(exception)}");
             return;
         }
 
@@ -218,9 +271,13 @@ public sealed class MetadataConsoleApp(
             _assembly = assembly;
             ConsolePresentation.WriteSuccess($"Analysis loaded: {assembly.Name} {assembly.Version}");
         }
+        catch (OperationCanceledException)
+        {
+            ConsolePresentation.WriteWarning("Reading the analysis cancelled.");
+        }
         catch (Exception exception)
         {
-            ConsolePresentation.WriteError($"Reading the analysis failed: {exception.Message}");
+            ConsolePresentation.WriteError($"Reading the analysis failed: {Describe(exception)}");
         }
     }
 
@@ -318,9 +375,12 @@ public sealed class MetadataConsoleApp(
         return false;
     }
 
+    private static string Describe(Exception exception) =>
+        exception is MetadataServiceException { UserMessage: var message } ? message : exception.Message;
+
     private async Task HandleInvalidOptionAsync(string choice)
     {
-        ConsolePresentation.WriteWarning($"Invalid option '{choice}'. Choose one of: 1, 2, 3, 4, 5, 6, 7, 0.");
+        ConsolePresentation.WriteWarning($"Invalid option '{choice}'. Choose one of: 1, 2, 3, 4, 5, 6, 7, 8, 0.");
         await logger.LogWarningAsync($"{LogEvents.InvalidSelection}: '{choice}'").ConfigureAwait(false);
     }
 

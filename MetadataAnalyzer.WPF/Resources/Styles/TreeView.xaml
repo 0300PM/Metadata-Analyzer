@@ -9,13 +9,14 @@
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
         <Setter Property="VirtualizingStackPanel.IsVirtualizing" Value="True" />
         <Setter Property="VirtualizingStackPanel.VirtualizationMode" Value="Recycling" />
-    </Style>
+</Style>
 
     <Style x:Key="AssemblyTreeViewItemStyle" TargetType="TreeViewItem">
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Visibility" Value="Visible" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TreeViewItem">
@@ -94,6 +95,11 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsVisible}" Value="False">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <Style TargetType="ScrollBar">
@@ -151,6 +157,6 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
-    </Style>
+</Style>
 
 </ResourceDictionary>
