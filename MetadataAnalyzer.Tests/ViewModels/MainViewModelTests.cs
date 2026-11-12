@@ -1,3 +1,4 @@
+using MetadataAnalyzer.Core.Interfaces;
 using MetadataAnalyzer.Core.Models;
 using MetadataAnalyzer.Core.Services;
 using MetadataAnalyzer.Tests.Support;
@@ -11,6 +12,8 @@ public sealed class MainViewModelTests
     private readonly Mock<Core.Interfaces.IMetadataService> _service = new();
     private readonly RecordingLogger _logger = new();
     private readonly FakeClock _clock = new(new DateTimeOffset(2026, 11, 10, 12, 0, 0, TimeSpan.Zero));
+
+    private const string SamplePath = @"C:\\libs\\SampleLibrary.dll";
 
     [Fact]
     public void StartsWithoutMetadata()
@@ -28,7 +31,7 @@ public sealed class MainViewModelTests
     {
         var assembly = await new MockMetadataProvider().LoadAsync();
         _service
-            .Setup(service => service.AnalyzeAsync(It.IsAny<CancellationToken>()))
+            .Setup(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(assembly);
 
         var viewModel = CreateViewModel();
@@ -51,7 +54,7 @@ public sealed class MainViewModelTests
     public async Task AnalyzeSetsStatusMessageWithElapsedTime()
     {
         _service
-            .Setup(service => service.AnalyzeAsync(It.IsAny<CancellationToken>()))
+            .Setup(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(AssemblyModel.Empty());
 
         var viewModel = CreateViewModel();
@@ -66,7 +69,7 @@ public sealed class MainViewModelTests
     {
         var assembly = await new MockMetadataProvider().LoadAsync();
         _service
-            .Setup(service => service.AnalyzeAsync(It.IsAny<CancellationToken>()))
+            .Setup(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(assembly);
 
         var viewModel = CreateViewModel();
@@ -79,7 +82,7 @@ public sealed class MainViewModelTests
         Assert.Equal("User", viewModel.Details.Title);
         Assert.Equal("Class", viewModel.Details.Kind);
         Assert.True(viewModel.Details.HasSelection);
-        _service.Verify(service => service.AnalyzeAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _service.Verify(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -87,7 +90,7 @@ public sealed class MainViewModelTests
     {
         var assembly = await new MockMetadataProvider().LoadAsync();
         _service
-            .Setup(service => service.AnalyzeAsync(It.IsAny<CancellationToken>()))
+            .Setup(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(assembly);
 
         var viewModel = CreateViewModel();
@@ -108,7 +111,7 @@ public sealed class MainViewModelTests
     public async Task ClearingSelectionResetsDetails()
     {
         _service
-            .Setup(service => service.AnalyzeAsync(It.IsAny<CancellationToken>()))
+            .Setup(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(await new MockMetadataProvider().LoadAsync());
 
         var viewModel = CreateViewModel();
@@ -125,7 +128,7 @@ public sealed class MainViewModelTests
     public async Task AnalyzeFailureShowsErrorAndLogsIt()
     {
         _service
-            .Setup(service => service.AnalyzeAsync(It.IsAny<CancellationToken>()))
+            .Setup(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("boom"));
 
         var viewModel = CreateViewModel();
@@ -157,7 +160,7 @@ public sealed class MainViewModelTests
     {
         var completion = new TaskCompletionSource<AssemblyModel>();
         _service
-            .Setup(service => service.AnalyzeAsync(It.IsAny<CancellationToken>()))
+            .Setup(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()))
             .Returns(completion.Task);
 
         var viewModel = CreateViewModel();
@@ -169,8 +172,132 @@ public sealed class MainViewModelTests
         completion.SetResult(AssemblyModel.Empty());
         await firstRun;
 
-        _service.Verify(service => service.AnalyzeAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _service.Verify(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    private MainViewModel CreateViewModel() => new(_service.Object, _logger, _clock);
+    [Fact]
+    public async Task OpenUsesPickedFileAsSource()
+    {
+        _service
+            .Setup(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(await new MockMetadataProvider().LoadAsync());
+
+        var viewModel = CreateViewModel();
+        viewModel.UseAssemblyPicker(() => @"C:\libs\SampleAssembly.dll");
+
+        await viewModel.OpenAssemblyCommand.ExecuteAsync(null);
+
+        _service.Verify(
+            service => service.AnalyzeAsync(
+                It.Is<MetadataSource>(source => source.FilePath == @"C:\libs\SampleAssembly.dll"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        Assert.True(viewModel.HasMetadata);
+    }
+
+    [Fact]
+    public async Task OpenIsSkippedWhenPickerIsCancelled()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.UseAssemblyPicker(() => null);
+
+        await viewModel.OpenAssemblyCommand.ExecuteAsync(null);
+
+        Assert.Equal("Open cancelled.", viewModel.StatusMessage);
+        Assert.False(viewModel.HasMetadata);
+        _service.Verify(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task LoadSampleIgnoresPicker()
+    {
+        _service
+            .Setup(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(await new MockMetadataProvider().LoadAsync());
+
+        var viewModel = CreateViewModel();
+        viewModel.UseAssemblyPicker(() => throw new InvalidOperationException("picker must not be used"));
+
+        await viewModel.LoadSampleCommand.ExecuteAsync(null);
+
+        Assert.True(viewModel.HasMetadata);
+        _service.Verify(
+            service => service.AnalyzeAsync(
+                It.Is<MetadataSource>(source => source.FilePath == null),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SearchFiltersTreeAndReportsMatches()
+    {
+        _service
+            .Setup(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(await new MockMetadataProvider().LoadAsync());
+
+        var viewModel = CreateViewModel();
+        viewModel.UseAssemblyPicker(() => "SampleLibrary.dll");
+        await viewModel.OpenAssemblyCommand.ExecuteAsync(null);
+
+        viewModel.SearchText = "UserService";
+
+        Assert.True(viewModel.HasSearch);
+        Assert.True(viewModel.MatchCount > 0);
+        Assert.Contains("matching elements", viewModel.StatusMessage, StringComparison.Ordinal);
+
+        var serviceNode = viewModel.Assembly!.Nodes[0]
+            .Flatten()
+            .First(node => node.Label == "UserService");
+
+        Assert.True(serviceNode.IsVisible);
+        Assert.True(serviceNode.Parent!.IsVisible);
+
+        var userClass = viewModel.Assembly.Nodes[0].Flatten().First(node => node.Label == "User");
+        Assert.False(userClass.IsVisible);
+    }
+
+    [Fact]
+    public async Task ClearingSearchRestoresEveryNode()
+    {
+        _service
+            .Setup(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(await new MockMetadataProvider().LoadAsync());
+
+        var viewModel = CreateViewModel();
+        viewModel.UseAssemblyPicker(() => "SampleLibrary.dll");
+        await viewModel.OpenAssemblyCommand.ExecuteAsync(null);
+        viewModel.SearchText = "UserService";
+
+        viewModel.ClearSearchCommand.Execute(null);
+
+        Assert.False(viewModel.HasSearch);
+        Assert.Equal(0, viewModel.MatchCount);
+        Assert.All(viewModel.Assembly!.Nodes[0].Flatten(), node => Assert.True(node.IsVisible));
+    }
+
+    [Fact]
+    public async Task SearchIsReappliedAfterReload()
+    {
+        _service
+            .Setup(service => service.AnalyzeAsync(It.IsAny<MetadataSource>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(await new MockMetadataProvider().LoadAsync());
+
+        var viewModel = CreateViewModel();
+        viewModel.UseAssemblyPicker(() => "SampleLibrary.dll");
+        await viewModel.OpenAssemblyCommand.ExecuteAsync(null);
+        viewModel.SearchText = "UserService";
+
+        await viewModel.LoadSampleCommand.ExecuteAsync(null);
+
+        Assert.True(viewModel.MatchCount > 0);
+        Assert.True(viewModel.Assembly!.Nodes[0].Flatten().First(node => node.Label == "UserService").IsVisible);
+    }
+
+    private MainViewModel CreateViewModel()
+    {
+        var viewModel = new MainViewModel(_service.Object, _logger, _clock);
+        viewModel.UseAssemblyPicker(() => SamplePath);
+
+        return viewModel;
+    }
 }

@@ -17,6 +17,8 @@ internal sealed class RecordingLogger : IAppLogger
 
     public List<string> Errors { get; } = [];
 
+    public List<Exception> Exceptions { get; } = [];
+
     public Task LogInformationAsync(string message)
     {
         Information.Add(message);
@@ -33,6 +35,12 @@ internal sealed class RecordingLogger : IAppLogger
     {
         Errors.Add(message);
         return Task.CompletedTask;
+    }
+
+    public Task LogErrorAsync(string message, Exception exception)
+    {
+        Exceptions.Add(exception);
+        return LogErrorAsync(message);
     }
 }
 

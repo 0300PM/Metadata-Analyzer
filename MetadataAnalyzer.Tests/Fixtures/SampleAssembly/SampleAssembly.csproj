@@ -6,7 +6,7 @@
     <IsPackable>false</IsPackable>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn);CS0067;CS8618;IDE0051</NoWarn>
+    <NoWarn>$(NoWarn);CS0067;CS8618;IDE0051;CA1822</NoWarn>
   </PropertyGroup>
 
 </Project>

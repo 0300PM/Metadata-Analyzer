@@ -50,9 +50,10 @@ public sealed class MetadataServiceTests
 
         var service = CreateService();
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.AnalyzeAsync());
+        var exception = await Assert.ThrowsAsync<MetadataServiceException>(() => service.AnalyzeAsync());
 
         Assert.Equal("assembly is corrupted", exception.Message);
+        Assert.Equal(MetadataErrorCode.InvalidAssembly, exception.Code);
         Assert.Contains(_logger.Errors, entry => entry.Contains("assembly is corrupted", StringComparison.Ordinal));
         Assert.Null(service.Current);
     }
@@ -200,11 +201,14 @@ public sealed class MetadataServiceTests
             .Setup(item => item.SaveAsync(It.IsAny<AssemblyModel>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new IOException("disk full"));
 
-        var exception = await Assert.ThrowsAsync<IOException>(
+        var exception = await Assert.ThrowsAsync<MetadataServiceException>(
             () => CreateService(repository.Object).SaveAsync(AssemblyModel.Empty()));
 
         Assert.Equal("disk full", exception.Message);
-        Assert.Contains(_logger.Errors, entry => entry.StartsWith(LogEvents.MetadataRepositoryFailed, StringComparison.Ordinal));
+        Assert.Equal(MetadataErrorCode.RepositoryUnavailable, exception.Code);
+        Assert.IsType<IOException>(exception.InnerException);
+        Assert.Contains(_logger.Errors, entry => entry.StartsWith(LogEvents.RepositoryWriteFailed, StringComparison.Ordinal));
+        Assert.Contains(_logger.Errors, entry => entry.Contains("disk full", StringComparison.Ordinal));
     }
 
     [Fact]

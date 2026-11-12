@@ -3,6 +3,7 @@ using MetadataAnalyzer.Core.Services;
 using MetadataAnalyzer.Infrastructure;
 using MetadataAnalyzer.Infrastructure.Configuration;
 using MetadataAnalyzer.Infrastructure.Logging;
+using MetadataAnalyzer.Tests.Support;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -71,9 +72,10 @@ public sealed class DependencyInjectionTests
         await logger.LogInformationAsync("di probe");
 
         Assert.Contains(sink.Entries, entry => entry.Message == "di probe");
-        // Dwie rejestracje IAppLogger: FileLogger (rejestrowany w AddMetadataAnalyzerLogging
-        // jako konkret) oraz SettingsAwareLogger — ostatnia wygrywa przy GetRequiredService.
-        Assert.Equal(2, provider.GetServices<IAppLogger>().Count());
+        var loggers = provider.GetServices<IAppLogger>().ToArray();
+
+        Assert.Single(loggers.OfType<SettingsAwareLogger>());
+        Assert.Single(loggers.OfType<FileLogger>());
     }
 
     [Fact]
@@ -109,12 +111,19 @@ public sealed class DependencyInjectionTests
 
         await repository.SaveAsync(assembly);
 
+        var loaded = await repository.LoadAsync(assembly.Name);
+
         Assert.Same(repository, provider.GetRequiredService<IMetadataRepository>());
-        Assert.Same(assembly, await repository.LoadAsync(assembly.Name));
-        Assert.Same(assembly, await repository.LoadLatestAsync());
+        Assert.IsType<XmlMetadataRepository>(repository);
+        Assert.True(AssemblyModelComparer.Instance.Equals(assembly, loaded), Describe(assembly, loaded));
+        var latest = await repository.LoadLatestAsync();
+        Assert.True(latest is not null && AssemblyModelComparer.Instance.Equals(assembly, latest), "latest analysis differs");
         Assert.Equal([assembly.Name], await repository.ListAsync());
         Assert.True(await repository.DeleteAsync(assembly.Name));
         Assert.False(await repository.DeleteAsync(assembly.Name));
         Assert.Empty(await repository.ListAsync());
     }
+
+    private static string Describe(MetadataAnalyzer.Core.Models.AssemblyModel expected, MetadataAnalyzer.Core.Models.AssemblyModel? actual) =>
+        string.Join(" | ", AssemblyModelComparer.Describe(expected, actual));
 }

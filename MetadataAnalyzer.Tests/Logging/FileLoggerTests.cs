@@ -112,6 +112,46 @@ public sealed class FileLoggerTests
     }
 
     [Fact]
+    public async Task LogErrorAsyncWritesExceptionChain()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = directory.File("application.log");
+        var logger = new FileLogger(new LoggingOptions { FilePath = path, LogToConsole = false });
+        var exception = new Core.Services.RepositoryDocumentException(
+            "The analysis file could not be read",
+            new InvalidOperationException("bad xml"));
+
+        await logger.LogErrorAsync(Core.Services.LogEvents.RepositoryReadFailed, exception);
+
+        var content = await System.IO.File.ReadAllTextAsync(path);
+
+        Assert.Contains("ERROR", content, StringComparison.Ordinal);
+        Assert.Contains("RepositoryDocumentException", content, StringComparison.Ordinal);
+        Assert.Contains("InvalidOperationException", content, StringComparison.Ordinal);
+        Assert.Contains("bad xml", content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LogErrorAsyncSkipsExceptionDetailsWhenDisabled()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = directory.File("application.log");
+        var logger = new FileLogger(new LoggingOptions
+        {
+            FilePath = path,
+            LogToConsole = false,
+            IncludeExceptionDetails = false,
+        });
+
+        await logger.LogErrorAsync(Core.Services.LogEvents.MetadataAnalysisFailed, new System.IO.IOException("disk full"));
+
+        var content = await System.IO.File.ReadAllTextAsync(path);
+
+        Assert.Contains(Core.Services.LogEvents.MetadataAnalysisFailed, content, StringComparison.Ordinal);
+        Assert.DoesNotContain("IOException", content, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ResolvesFilePathAgainstApplicationDirectory()
     {
         var resolved = Infrastructure.AppConfiguration.ResolveLogFilePath("Logs/application.log");
