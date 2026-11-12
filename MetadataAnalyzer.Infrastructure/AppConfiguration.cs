@@ -1,4 +1,5 @@
 using MetadataAnalyzer.Core.Interfaces;
+using MetadataAnalyzer.Core.Services;
 using MetadataAnalyzer.Infrastructure.Configuration;
 using MetadataAnalyzer.Infrastructure.Logging;
 using Microsoft.Extensions.Configuration;
@@ -34,7 +35,15 @@ public static class AppConfiguration
 
         services.AddSingleton(configuration);
         services.AddSingleton(application);
-        services.AddMetadataAnalyzerCore(application.UseMockData, application.AssemblyPath);
+        services.AddMetadataAnalyzerCore(
+            application.UseMockData && string.IsNullOrWhiteSpace(application.AssemblyPath),
+            application.AssemblyPath,
+            repositoryOptions: new XmlMetadataRepositoryOptions
+            {
+                DirectoryPath = string.IsNullOrWhiteSpace(application.RepositoryPath)
+                    ? null
+                    : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, application.RepositoryPath)),
+            });
         services.AddMetadataAnalyzerLogging(options =>
         {
             options.Enabled = logging.Enabled;
