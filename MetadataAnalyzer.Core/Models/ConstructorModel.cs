@@ -9,5 +9,13 @@ public sealed record ConstructorModel(
 
     public string Signature => $"({string.Join(", ", Parameters.Select(parameter => parameter.DisplayName))})";
 
+    public bool Equals(ConstructorModel? other) =>
+        other is not null
+        && Visibility == other.Visibility
+        && IsStatic == other.IsStatic
+        && Signature == other.Signature;
+
+    public override int GetHashCode() => HashCode.Combine(Visibility, IsStatic, Parameters.Count);
+
     public string Modifier => IsStatic ? "static " : string.Empty;
 }
